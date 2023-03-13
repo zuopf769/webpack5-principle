@@ -1,3 +1,5 @@
+// webpack如何利用 commonJs 实现 ESM 的 live binding 属性
+
 import { a } from './03.async-data.js'
 console.log('instance ', a)
 setTimeout(() => {
