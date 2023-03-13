@@ -1,5 +1,4 @@
-// ES6 modules 加载 ES6 modules
+// ES6 modules 加载 commonjs
 import name, { age } from './title'
-
-console.log(name)
-console.log(age)
+console.log('name', name)
+console.log('age', age)
