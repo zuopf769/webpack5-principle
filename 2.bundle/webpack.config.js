@@ -5,7 +5,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 module.exports = {
   mode: 'development',
   devtool: 'source-map',
-  entry: './src/index.js',
+  entry: './src/03.index.js', // 修改相应的xx.index.js可以查看不同的场景demo
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js'
