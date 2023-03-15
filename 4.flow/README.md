@@ -45,3 +45,37 @@ node --inspect-brk ./node_modules/webpack-cli/bin/cli.js
 - 把`.vscode`目录下的`launch.json`文件删掉
 - 打开选中`debugger.js`文件，并在要调试的位置输入'`debugger`
 - 点击`vscode`的调试按钮，点击`Run and Debug`，代码就是处于调试状态，运行到断点的地方
+
+## 2.tapable.js
+
+- `tapable` 是一个类似于 `Node.js` 中的 `EventEmitter` 的库，但更专注于自定义事件的触发和处理
+- `webpack` 通过 `tapable` 将实现与流程解耦，所有具体实现通过插件的形式存在
+
+```js
+class SyncHook {
+  constructor() {
+    this.taps = []
+  }
+  tap(name, fn) {
+    this.taps.push(fn)
+  }
+  call() {
+    this.taps.forEach(tap => tap())
+  }
+}
+
+let hook = new SyncHook()
+hook.tap('some name', () => {
+  console.log('some name')
+})
+
+class Plugin {
+  apply() {
+    hook.tap('Plugin', () => {
+      console.log('Plugin ')
+    })
+  }
+}
+new Plugin().apply()
+hook.call()
+```
