@@ -1,2 +1,4 @@
 const title = require('./title')
-console.log(title);
+const baxx = require('./xx.baxx')
+console.log(title)
+console.log(baxx)

@@ -1,6 +1,16 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./src/xx.baxx":
+/*!*********************!*\
+  !*** ./src/xx.baxx ***!
+  \*********************/
+/***/ ((module) => {
+
+module.exports = "baxx-loader1-loader2"
+
+/***/ }),
+
 /***/ "./src/message.js":
 /*!************************!*\
   !*** ./src/message.js ***!
@@ -8,6 +18,7 @@
 /***/ ((module) => {
 
 module.exports = 'msg'
+
 
 /***/ }),
 
@@ -17,8 +28,9 @@ module.exports = 'msg'
   \**********************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-let msg = __webpack_require__(/*! ./message */ "./src/message.js");
-module.exports = 'title' + msg;
+let msg = __webpack_require__(/*! ./message */ "./src/message.js")
+module.exports = 'title' + msg
+
 
 /***/ })
 
@@ -56,7 +68,9 @@ var __webpack_exports__ = {};
   !*** ./src/index.js ***!
   \**********************/
 const title = __webpack_require__(/*! ./title */ "./src/title.js")
-console.log(title);
+const baxx = __webpack_require__(/*! ./xx.baxx */ "./src/xx.baxx")
+console.log(title)
+console.log(baxx)
 
 })();
 
