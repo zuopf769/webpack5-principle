@@ -15,6 +15,7 @@ var modules = {
       default: () => _DEFAULT_EXPORT__
     })
     // 模块内部的变量_DEFAULT_EXPORT__、age
+    // 导出的default的值重新赋值给了_DEFAULT_EXPORT__变量，所以default如果是基本数据类型不会live binding，因为重新赋值给了一个新的变量_DEFAULT_EXPORT__
     const _DEFAULT_EXPORT__ = 'title_name'
     const age = 'title_age'
   }
