@@ -6,6 +6,9 @@ const DonePlugin = require('./plugins/done-plugin')
 module.exports = {
   mode: 'development',
   devtool: false, // 不生成sourcemap
+  cache: {
+    type: 'filesystem' // 如果配置成文件系统缓存，就可以在node_modules下的.cache目录下看到webpack的缓存
+  },
   entry: {
     // 单入口可以配置成一个字符串的值
     // 多入口是一个对象

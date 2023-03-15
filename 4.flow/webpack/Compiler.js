@@ -1,3 +1,4 @@
+const fs = require('fs')
 const { SyncHook } = require('tapable')
 const Compilation = require('./Compilation')
 
@@ -23,14 +24,33 @@ class Compiler {
   run(callback) {
     // 在编译开始前触发run钩子执行
     this.hooks.run.call()
-    const onCompiled = (err, stats, fileDependencies) => {}
+    /**
+     *
+     * @param {*} err
+     * @param {*} stats stats代表统计结果对象 modules chunks files=bundle assets指的是文件名和文件内容的关系
+     * @param {*} fileDependencies 依赖的文件路径
+     */
+    const onCompiled = (err, stats, fileDependencies) => {
+      // 执行Compiler实例run方法的回调
+      callback(err, { toJson: () => stats })
+      // 在编译的过程中会收集所有的依赖的模块或者说文件
+      for (let fileDependency of fileDependencies) {
+        // 监听依赖的文件变化，如果依赖的文件变化后会开启一次新的编译
+        // 在webpack5之前，会全部重新编译，比较慢，所以需要各种cache插件: HardSourcePlugin dllplugin
+        // webpack5，内置了这些缓存只会重新编译变化的文件，没有变化的文件直接从缓存中获取
+        // https://webpack.docschina.org/configuration/cache/#root
+        fs.watch(fileDependency, () => this.compile(onCompiled))
+      }
+      // 在编译完成时触发done的钩子，相应插件的done钩子里面都只执行
+      this.hooks.done.call()
+    }
     //调用compile方法进行编译
     this.compile(onCompiled)
   }
 
   // 开启一次新的编译
   compile(callback) {
-    // 每次编译 都会创建一个新的Compilation实例
+    // 每次编译 都会创建一个新的Compilation实例，而Compiler只有一个实例，这就是Compilation和Compiler的区别
     let compilation = new Compilation(this.options, this)
     // build方法开始编译
     compilation.build(callback)
