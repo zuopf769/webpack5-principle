@@ -5,14 +5,22 @@ const DonePlugin = require('./plugins/done-plugin')
 
 module.exports = {
   mode: 'development',
-  devtool: false,
+  devtool: false, // 不生成sourcemap
   entry: {
+    // 单入口可以配置成一个字符串的值
+    // 多入口是一个对象
     // chunk的名称、值是入口模块的路径
-    main: './src/index.js'
+    // main: './src/index.js'
+    entry1: './src/entry1.js',
+    entry2: './src/entry2.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js' // 决定assets的文件名
+  },
+  resolve: {
+    // require文件时可以不写后缀；webpack对模块后缀的解析，从左向右查找
+    extensions: ['.js', '.jsx', '.ts', '.tsx']
   },
   module: {
     rules: [

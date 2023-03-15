@@ -1,4 +1,7 @@
-const webpack = require('webpack')
+// 官方webapck
+// const webpack = require('webpack')
+// 自己的webpack
+const webpack = require('./webpack/webpack')
 const webpackConfig = require('./webpack.config')
 debugger
 // 打包器编译对象Compiler
