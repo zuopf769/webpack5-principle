@@ -16,10 +16,11 @@ function webpack(options) {
   }, {})
 
   // 最终的配置对象
+  // shellOptions的优先级高
   // shellOptions中的配置项会覆盖配置文件webpack.config.js中的配置
   const finalOptions = { ...options, ...shellOptions }
 
-  console.log(finalOptions)
+  // console.log(finalOptions)
 
   // 2.用上一步得到的参数初始化 `Compiler` 对象
   // 单例，编译过程中只有一份

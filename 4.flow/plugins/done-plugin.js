@@ -1,4 +1,5 @@
 class DonePlugin {
+  //每个插件都是一个类，而每个类都需要定义一个apply方法
   apply(compiler) {
     // webpack插件，靠的是调用webpack内置的的钩子
     compiler.hooks.done.tap('DonePlugin', () => {

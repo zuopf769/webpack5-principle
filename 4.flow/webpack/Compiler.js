@@ -1,3 +1,4 @@
+const path = require('path')
 const fs = require('fs')
 const { SyncHook } = require('tapable')
 const Compilation = require('./Compilation')
@@ -31,6 +32,11 @@ class Compiler {
      * @param {*} fileDependencies 依赖的文件路径
      */
     const onCompiled = (err, stats, fileDependencies) => {
+      // 10 在确定好输出内容后，根据配置确定输出的路径和文件名，把文件内容写入到文件系统
+      for (let filename in stats.assets) {
+        let filePath = path.join(this.options.output.path, filename)
+        fs.writeFileSync(filePath, stats.assets[filename], 'utf8')
+      }
       // 执行Compiler实例run方法的回调
       callback(err, { toJson: () => stats })
       // 在编译的过程中会收集所有的依赖的模块或者说文件
@@ -56,4 +62,5 @@ class Compiler {
     compilation.build(callback)
   }
 }
+
 module.exports = Compiler

@@ -85,9 +85,9 @@ hook.call()
 - 1. 初始化参数：从配置文件和 `Shell` 语句中读取并合并参数,得出最终的配置对象
 - 2. 用上一步得到的参数初始化 `Compiler` 对象
 - 3. 加载所有配置的插件
-- 4. 执行对象的 `run` 方法开始执行编译
+- 4. 执行`Compiler`对象的 `run` 方法开始执行编译
 - 5. 根据配置中的 `entry` 找出入口文件
-- 6. 从入口文件出发,调用所有配置的 `Loader` 对模块进行编译
+- 6. 从入口文件出发，调用所有配置的 `Loader` 对模块进行编译
 - 7. 再找出该模块依赖的模块，再递归本步骤直到所有入口依赖的文件都经过了本步骤的处理
 - 8. 根据入口和模块之间的依赖关系，组装成一个个包含多个模块的 `Chunk`
 - 9. 再把每个 `Chunk` 转换成一个单独的文件加入到输出列表
@@ -96,3 +96,463 @@ hook.call()
 > 在以上过程中，`Webpack` 会在特定的时间点广播出特定的事件，插件在监听到感兴趣的事件后会执行特定的逻辑，并且插件可以调用 `Webpack` 提供的 `API` 改变 `Webpack` 的运行结果
 
 ![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/15/16-45-53-2dad0527661de1ce61da693af92fc988-20230315164552-da8e2b.png)
+
+## 4.Stats 对象
+
+- 在 `Webpack` 的回调函数中会得到 `stats` 对象
+- 这个对象实际来自于 `Compilation.getStats()`，返回的是主要含有 `modules`、`chunks` 和 `assets` 三个属性值的对象。
+- Stats 对象本质上来自于 lib/Stats.js[https://github.com/webpack/webpack/blob/v4.39.3/lib/Stats.js] 的类实例
+
+| 字段    | 含义                   |
+| ------- | ---------------------- |
+| modules | 记录了所有解析后的模块 |
+| chunks  | 记录了所有 chunk       |
+| assets  | 记录了所有要生成的文件 |
+
+```shell
+npx webpack --profile --json > stats.json
+```
+
+```json
+{
+  "hash": "780231fa9b9ce4460c8a", //编译使用的 hash
+  "version": "5.8.0", // 用来编译的 webpack 的版本
+  "time": 83, // 编译耗时 (ms)
+  "builtAt": 1606538839612, //编译的时间
+  "publicPath": "auto", //资源访问路径
+  "outputPath": "C:\\webpack5\\dist", //输出目录
+  "assetsByChunkName": {
+    //代码块和文件名的映射
+    "main": ["main.js"]
+  },
+  "assets": [
+    //资源数组
+    {
+      "type": "asset", //资源类型
+      "name": "main.js", //文件名称
+      "size": 2418, //文件大小
+      "chunkNames": [
+        //对应的代码块名称
+        "main"
+      ],
+      "chunkIdHints": [],
+      "auxiliaryChunkNames": [],
+      "auxiliaryChunkIdHints": [],
+      "emitted": false,
+      "comparedForEmit": true,
+      "cached": false,
+      "info": {
+        "javascriptModule": false,
+        "size": 2418
+      },
+      "related": {},
+      "chunks": ["main"],
+      "auxiliaryChunks": [],
+      "isOverSizeLimit": false
+    }
+  ],
+  "chunks": [
+    //代码块数组
+    {
+      "rendered": true,
+      "initial": true,
+      "entry": true,
+      "recorded": false,
+      "size": 80,
+      "sizes": {
+        "javascript": 80
+      },
+      "names": ["main"],
+      "idHints": [],
+      "runtime": ["main"],
+      "files": ["main.js"],
+      "auxiliaryFiles": [],
+      "hash": "d25ad7a8144077f69783",
+      "childrenByOrder": {},
+      "id": "main",
+      "siblings": [],
+      "parents": [],
+      "children": [],
+      "modules": [
+        {
+          "type": "module",
+          "moduleType": "javascript/auto",
+          "identifier": "C:\\webpack5\\src\\index.js",
+          "name": "./src/index.js",
+          "nameForCondition": "C:\\webpack5\\src\\index.js",
+          "index": 0,
+          "preOrderIndex": 0,
+          "index2": 1,
+          "postOrderIndex": 1,
+          "size": 55,
+          "sizes": {
+            "javascript": 55
+          },
+          "cacheable": true,
+          "built": true,
+          "codeGenerated": true,
+          "cached": false,
+          "optional": false,
+          "orphan": false,
+          "dependent": false,
+          "issuer": null,
+          "issuerName": null,
+          "issuerPath": null,
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "profile": {
+            "total": 38,
+            "resolving": 26,
+            "restoring": 0,
+            "building": 12,
+            "integration": 0,
+            "storing": 0,
+            "additionalResolving": 0,
+            "additionalIntegration": 0,
+            "factory": 26,
+            "dependencies": 0
+          },
+          "id": "./src/index.js",
+          "issuerId": null,
+          "chunks": ["main"],
+          "assets": [],
+          "reasons": [
+            {
+              "moduleIdentifier": null,
+              "module": null,
+              "moduleName": null,
+              "resolvedModuleIdentifier": null,
+              "resolvedModule": null,
+              "type": "entry",
+              "active": true,
+              "explanation": "",
+              "userRequest": "./src/index.js",
+              "loc": "main",
+              "moduleId": null,
+              "resolvedModuleId": null
+            }
+          ],
+          "usedExports": null,
+          "providedExports": null,
+          "optimizationBailout": [],
+          "depth": 0
+        },
+        {
+          "type": "module",
+          "moduleType": "javascript/auto",
+          "identifier": "C:\\webpack5\\src\\title.js",
+          "name": "./src/title.js",
+          "nameForCondition": "C:\\webpack5\\src\\title.js",
+          "index": 1,
+          "preOrderIndex": 1,
+          "index2": 0,
+          "postOrderIndex": 0,
+          "size": 25,
+          "sizes": {
+            "javascript": 25
+          },
+          "cacheable": true,
+          "built": true,
+          "codeGenerated": true,
+          "cached": false,
+          "optional": false,
+          "orphan": false,
+          "dependent": true,
+          "issuer": "C:\\webpack5\\src\\index.js",
+          "issuerName": "./src/index.js",
+          "issuerPath": [
+            {
+              "identifier": "C:\\webpack5\\src\\index.js",
+              "name": "./src/index.js",
+              "profile": {
+                "total": 38,
+                "resolving": 26,
+                "restoring": 0,
+                "building": 12,
+                "integration": 0,
+                "storing": 0,
+                "additionalResolving": 0,
+                "additionalIntegration": 0,
+                "factory": 26,
+                "dependencies": 0
+              },
+              "id": "./src/index.js"
+            }
+          ],
+          "failed": false,
+          "errors": 0,
+          "warnings": 0,
+          "profile": {
+            "total": 0,
+            "resolving": 0,
+            "restoring": 0,
+            "building": 0,
+            "integration": 0,
+            "storing": 0,
+            "additionalResolving": 0,
+            "additionalIntegration": 0,
+            "factory": 0,
+            "dependencies": 0
+          },
+          "id": "./src/title.js",
+          "issuerId": "./src/index.js",
+          "chunks": ["main"],
+          "assets": [],
+          "reasons": [
+            {
+              "moduleIdentifier": "C:\\webpack5\\src\\index.js",
+              "module": "./src/index.js",
+              "moduleName": "./src/index.js",
+              "resolvedModuleIdentifier": "C:\\webpack5\\src\\index.js",
+              "resolvedModule": "./src/index.js",
+              "type": "cjs require",
+              "active": true,
+              "explanation": "",
+              "userRequest": "./title.js",
+              "loc": "1:12-33",
+              "moduleId": "./src/index.js",
+              "resolvedModuleId": "./src/index.js"
+            },
+            {
+              "moduleIdentifier": "C:\\webpack5\\src\\title.js",
+              "module": "./src/title.js",
+              "moduleName": "./src/title.js",
+              "resolvedModuleIdentifier": "C:\\webpack5\\src\\title.js",
+              "resolvedModule": "./src/title.js",
+              "type": "cjs self exports reference",
+              "active": true,
+              "explanation": "",
+              "userRequest": null,
+              "loc": "1:0-14",
+              "moduleId": "./src/title.js",
+              "resolvedModuleId": "./src/title.js"
+            }
+          ],
+          "usedExports": null,
+          "providedExports": null,
+          "optimizationBailout": ["CommonJS bailout: module.exports is used directly at 1:0-14"],
+          "depth": 1
+        }
+      ],
+      "origins": [
+        {
+          "module": "",
+          "moduleIdentifier": "",
+          "moduleName": "",
+          "loc": "main",
+          "request": "./src/index.js"
+        }
+      ]
+    }
+  ],
+  "modules": [
+    //模块数组
+    {
+      "type": "module",
+      "moduleType": "javascript/auto",
+      "identifier": "C:\\webpack5\\src\\index.js",
+      "name": "./src/index.js",
+      "nameForCondition": "C:\\webpack5\\src\\index.js",
+      "index": 0,
+      "preOrderIndex": 0,
+      "index2": 1,
+      "postOrderIndex": 1,
+      "size": 55,
+      "sizes": {
+        "javascript": 55
+      },
+      "cacheable": true,
+      "built": true,
+      "codeGenerated": true,
+      "cached": false,
+      "optional": false,
+      "orphan": false,
+      "issuer": null,
+      "issuerName": null,
+      "issuerPath": null,
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "profile": {
+        "total": 38,
+        "resolving": 26,
+        "restoring": 0,
+        "building": 12,
+        "integration": 0,
+        "storing": 0,
+        "additionalResolving": 0,
+        "additionalIntegration": 0,
+        "factory": 26,
+        "dependencies": 0
+      },
+      "id": "./src/index.js",
+      "issuerId": null,
+      "chunks": ["main"],
+      "assets": [],
+      "reasons": [
+        {
+          "moduleIdentifier": null,
+          "module": null,
+          "moduleName": null,
+          "resolvedModuleIdentifier": null,
+          "resolvedModule": null,
+          "type": "entry",
+          "active": true,
+          "explanation": "",
+          "userRequest": "./src/index.js",
+          "loc": "main",
+          "moduleId": null,
+          "resolvedModuleId": null
+        }
+      ],
+      "usedExports": null,
+      "providedExports": null,
+      "optimizationBailout": [],
+      "depth": 0
+    },
+    {
+      "type": "module",
+      "moduleType": "javascript/auto",
+      "identifier": "C:\\webpack5\\src\\title.js",
+      "name": "./src/title.js",
+      "nameForCondition": "C:\\webpack5\\src\\title.js",
+      "index": 1,
+      "preOrderIndex": 1,
+      "index2": 0,
+      "postOrderIndex": 0,
+      "size": 25,
+      "sizes": {
+        "javascript": 25
+      },
+      "cacheable": true,
+      "built": true,
+      "codeGenerated": true,
+      "cached": false,
+      "optional": false,
+      "orphan": false,
+      "issuer": "C:\\webpack5\\src\\index.js",
+      "issuerName": "./src/index.js",
+      "issuerPath": [
+        {
+          "identifier": "C:\\webpack5\\src\\index.js",
+          "name": "./src/index.js",
+          "profile": {
+            "total": 38,
+            "resolving": 26,
+            "restoring": 0,
+            "building": 12,
+            "integration": 0,
+            "storing": 0,
+            "additionalResolving": 0,
+            "additionalIntegration": 0,
+            "factory": 26,
+            "dependencies": 0
+          },
+          "id": "./src/index.js"
+        }
+      ],
+      "failed": false,
+      "errors": 0,
+      "warnings": 0,
+      "profile": {
+        "total": 0,
+        "resolving": 0,
+        "restoring": 0,
+        "building": 0,
+        "integration": 0,
+        "storing": 0,
+        "additionalResolving": 0,
+        "additionalIntegration": 0,
+        "factory": 0,
+        "dependencies": 0
+      },
+      "id": "./src/title.js",
+      "issuerId": "./src/index.js",
+      "chunks": ["main"],
+      "assets": [],
+      "reasons": [
+        {
+          "moduleIdentifier": "C:\\webpack5\\src\\index.js",
+          "module": "./src/index.js",
+          "moduleName": "./src/index.js",
+          "resolvedModuleIdentifier": "C:\\webpack5\\src\\index.js",
+          "resolvedModule": "./src/index.js",
+          "type": "cjs require",
+          "active": true,
+          "explanation": "",
+          "userRequest": "./title.js",
+          "loc": "1:12-33",
+          "moduleId": "./src/index.js",
+          "resolvedModuleId": "./src/index.js"
+        },
+        {
+          "moduleIdentifier": "C:\\webpack5\\src\\title.js",
+          "module": "./src/title.js",
+          "moduleName": "./src/title.js",
+          "resolvedModuleIdentifier": "C:\\webpack5\\src\\title.js",
+          "resolvedModule": "./src/title.js",
+          "type": "cjs self exports reference",
+          "active": true,
+          "explanation": "",
+          "userRequest": null,
+          "loc": "1:0-14",
+          "moduleId": "./src/title.js",
+          "resolvedModuleId": "./src/title.js"
+        }
+      ],
+      "usedExports": null,
+      "providedExports": null,
+      "optimizationBailout": ["CommonJS bailout: module.exports is used directly at 1:0-14"],
+      "depth": 1
+    }
+  ],
+  "entrypoints": {
+    //入口点
+    "main": {
+      "name": "main",
+      "chunks": ["main"],
+      "assets": [
+        {
+          "name": "main.js",
+          "size": 2418
+        }
+      ],
+      "filteredAssets": 0,
+      "assetsSize": 2418,
+      "auxiliaryAssets": [],
+      "filteredAuxiliaryAssets": 0,
+      "auxiliaryAssetsSize": 0,
+      "children": {},
+      "childAssets": {},
+      "isOverSizeLimit": false
+    }
+  },
+  "namedChunkGroups": {
+    //命名代码块组
+    "main": {
+      "name": "main",
+      "chunks": ["main"],
+      "assets": [
+        {
+          "name": "main.js",
+          "size": 2418
+        }
+      ],
+      "filteredAssets": 0,
+      "assetsSize": 2418,
+      "auxiliaryAssets": [],
+      "filteredAuxiliaryAssets": 0,
+      "auxiliaryAssetsSize": 0,
+      "children": {},
+      "childAssets": {},
+      "isOverSizeLimit": false
+    }
+  },
+  "errors": [],
+  "errorsCount": 0,
+  "warnings": [],
+  "warningsCount": 0,
+  "children": []
+}
+```

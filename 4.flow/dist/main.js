@@ -1,5 +1,6 @@
 ;(() => {
   var __webpack_modules__ = {
+    // 模块ID
     './src/xx.baxx': module => {
       module.exports = 'baxx-loader1-loader2'
     },
@@ -7,6 +8,7 @@
       module.exports = 'msg'
     },
     './src/title.js': (module, __unused_webpack_exports, __webpack_require__) => {
+      // 所以这里面的模块路径也要修改为何模块ID一致
       let msg = __webpack_require__('./src/message.js')
       module.exports = 'title' + msg
     }
@@ -17,6 +19,7 @@
     if (cachedModule !== undefined) {
       return cachedModule.exports
     }
+    // 最终__webpack_require__是从__webpack_modules__通过module ID去找模块
     var module = (__webpack_module_cache__[moduleId] = {
       exports: {}
     })

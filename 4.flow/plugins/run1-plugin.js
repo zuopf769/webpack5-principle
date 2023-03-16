@@ -1,5 +1,6 @@
 // webpack的插件是一个类
 class RunPlugin {
+  //每个插件都是一个类，而每个类都需要定义一个apply方法
   apply(compiler) {
     // 在此插件里可以监听run这个钩子
     // compiler.hooks有很多的hooks，代表webpack编译流程中的某个生命周期阶段
