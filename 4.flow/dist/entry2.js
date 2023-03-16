@@ -2,9 +2,9 @@
   (() => {
     var modules = {
       
-          "./src/title.js": module => {
-            let msg = require("./src/message.js");
-module.exports = 'title' + msg;
+          "./src/entry2.js": module => {
+            let title = require("./src/title.js");
+console.log('entry2', title);
           }
         
     };

@@ -10,6 +10,8 @@ function normalizePath(path) {
   return path.replace(/\\/g, '/')
 }
 
+// 该文件没有解决循环依赖
+
 // https://webpack.docschina.org/api/compilation-hooks/
 // Compilation 模块会被 Compiler 用来创建新的 compilation 对象（或新的 build 对象）。
 // compilation 实例能够访问所有的模块和它们的依赖（大部分是循环依赖）。
@@ -52,7 +54,7 @@ class Compilation {
       let chunk = {
         name: entryName,
         entryModule,
-        modules: this.modules.filter(module => module.names.includes(entryName)).slice(1) // 不能包含entry模块
+        modules: this.modules.filter(module => module.names.includes(entryName))
       }
       // 放在这里就是为了避免把entryModule也放到了chunk.modules中
       // 但是我不知道webpack源码是怎么区分entryModule和普通modules的
@@ -117,7 +119,6 @@ class Compilation {
     // name是模块所属的代码块的名称,如果一个模块属于多个代码块，那么name就是一个数组
     let module = { id: moduleId, dependencies: [], names: [name] }
     // 必须这里就push返回就解决
-    this.modules.push(module)
     // 解析源码生成ast抽象语法树，分析模块依赖
     let ast = parser.parse(sourceCode, { sourceType: 'module' })
     // visitor是babel对ast的遍历器或者访问器
@@ -169,9 +170,8 @@ class Compilation {
       if (existModule) {
         existModule.names.push(name)
       } else {
-        // let depModule = this.buildModule(name, depModulePath)
-        // this.modules.push(depModule)
-        this.buildModule(name, depModulePath)
+        let depModule = this.buildModule(name, depModulePath)
+        this.modules.push(depModule)
       }
     })
 
