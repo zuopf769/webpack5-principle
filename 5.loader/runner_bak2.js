@@ -7,12 +7,12 @@ const entryFile = path.resolve(__dirname, "src/index.js");
 
 // !! 不要前后置和普通 loader,只要内联 loader
 // let request = `!!inline-loader1!inline-loader2!${entryFile}`;
+
 //  ! 不要普通 loader
 // let request = `!inline-loader1!inline-loader2!${entryFile}`;
-// -! 不要前置和普通 loader
-// let request = `-!inline-loader1!inline-loader2!${entryFile}`;
 
-let request = `inline-loader1!inline-loader2!${entryFile}`;
+// -! 不要前置和普通 loader
+let request = `-!inline-loader1!inline-loader2!${entryFile}`;
 
 let rules = [
   {

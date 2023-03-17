@@ -122,3 +122,25 @@ runLoaders(
 | !    | noAutoLoaders        | 不要普通 loader                         | Prefixing with ! will disable all configured normal loaders                              |
 | !!   | noPrePostAutoLoaders | 不要前后置和普通 loader,只要内联 loader | Prefixing with !! will disable all configured loaders (preLoaders, loaders, postLoaders) |
 |      |
+
+## 1.4 pitch
+
+- 比如 `a!b!c!module`, 正常调用顺序应该是 `c、b、a`，但是真正调用顺序是 `a(pitch)、b(pitch)、c(pitch)、c、b、a`,如果其中任何一个 `pitching loader` 返回了值就相当于在它以及它右边的 `loader `已经执行完毕
+- 比如如果 `b` 返回了字符串"result b", 接下来只有 `a` 会被系统执行，且 `a` 的 `loader` 收到的参数是 `result b`
+- `loader` 根据返回值可以分为两种，一种是返回 `j`s 代码（一个 `module` 的代码，含有类似 `module.export` 语句）的 `loader`，还有不能作为最左边 `loader` 的其他 `loader`
+- 有时候我们想把两个第一种 `loader chain` 起来，比如 `style-loader!css-loader!` 问题是 `css-loader` 的返回值是一串 `js` 代码，如果按正常方式写 `style-loader` 的参数就是一串代码字符串
+- 为了解决这种问题，我们需要在 `style-loader` 里执行 `require(css-loader!resources)`
+
+pitch 与 loader 本身方法的执行顺序图
+
+```shell
+|- a-loader `pitch`
+  |- b-loader `pitch`
+    |- c-loader `pitch`
+      |- requested module is picked up as a dependency
+    |- c-loader normal execution
+  |- b-loader normal execution
+|- a-loader normal execution
+```
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/17/15-00-24-e2f784f29c6273ce0efc92edf16ab6aa-20230317150024-82ffe9.png)

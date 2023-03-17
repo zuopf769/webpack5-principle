@@ -3,4 +3,8 @@ function loader(source) {
   return source + "//inline-loader2";
 }
 
+loader.pitch = () => {
+  console.log("inline-loader2-pitch");
+};
+
 module.exports = loader;

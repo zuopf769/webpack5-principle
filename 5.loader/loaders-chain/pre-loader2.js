@@ -3,4 +3,8 @@ function loader(source) {
   return source + "//pre-loader2";
 }
 
+loader.pitch = () => {
+  console.log("pre-loader2-pitch");
+};
+
 module.exports = loader;
