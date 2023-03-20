@@ -33,13 +33,7 @@ module.exports = {
         exclude: /node_modules/,
         use: [
           {
-            loader: "babel-loader2",
-            options: {
-              presets: ["@babel/preset-env"],
-            },
-          },
-          {
-            loader: "babel-loader3",
+            loader: "babel-loader",
             options: {
               presets: ["@babel/preset-env"],
             },

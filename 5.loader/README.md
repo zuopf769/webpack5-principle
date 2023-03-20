@@ -16,11 +16,11 @@
 
 ![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/17/09-46-24-e130ce26b376a46cf06e3849fbb2fa8a-20230317094622-2e4191.png)
 
-### 1.2.1 loader 类型
+#### 1.2.1 loader 类型
 
 - [loader 的叠加顺序](https://github.com/webpack/webpack/blob/v4.39.3/lib/NormalModuleFactory.js#L159-L339) = post(后置)+inline(内联)+normal(正常)+pre(前置)
 
-### 1.2.2 执行流程
+#### 1.2.2 执行流程
 
 ```js
 const { runLoaders } = require("loader-runner");
@@ -111,7 +111,7 @@ runLoaders(
 
 ![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/17/11-05-02-a39c63779e4b39e58da94a4660791bb0-20230317110501-85c03f.png)
 
-## 1.3 特殊配置
+### 1.3 特殊配置
 
 - [loaders/#configuration](https://webpack.js.org/concepts/loaders/#inline)
 
@@ -123,7 +123,7 @@ runLoaders(
 | !!   | noPrePostAutoLoaders | 不要前后置和普通 loader,只要内联 loader | Prefixing with !! will disable all configured loaders (preLoaders, loaders, postLoaders) |
 |      |
 
-## 1.4 pitch
+### 1.4 pitch
 
 - 比如 `a!b!c!module`, 正常调用顺序应该是 `c、b、a`，但是真正调用顺序是 `a(pitch)、b(pitch)、c(pitch)、c、b、a`,如果其中任何一个 `pitching loader` 返回了值就相当于在它以及它右边的 `loader `已经执行完毕
 - 比如如果 `b` 返回了字符串"result b", 接下来只有 `a` 会被系统执行，且 `a` 的 `loader` 收到的参数是 `result b`
@@ -144,3 +144,34 @@ pitch 与 loader 本身方法的执行顺序图
 ```
 
 ![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/17/15-00-24-e2f784f29c6273ce0efc92edf16ab6aa-20230317150024-82ffe9.png)
+
+## 2.babel-loader
+
+- [babel-loader](https://github.com/babel/babel-loader/blob/master/src/index.js)
+- [babel-core](https://babeljs.io/docs/babel-core.html)
+- [babel-plugin-transform-react-jsx](https://babeljs.io/docs/babel-plugin-transform-react-jsx/)
+- currentRequest 自己和后面的 loader+资源路径
+- remainingRequest 后面的 loader+资源路径
+- data: 和普通的 loader 函数的第三个参数一样,而且 loader 执行的全程用的是同一个对象
+- 注意 sourceMaps 最后有个 s
+
+| 属性              | 值                                     |
+| ----------------- | -------------------------------------- |
+| this.request      | /loaders/babel-loader.js!/src/index.js |
+| this.resourcePath | /src/index.js                          |
+
+```shell
+npm i @babel/preset-env @babel/core -D
+```
+
+- babel-loader 只是提供一个转换函数，但是它并不知道要干啥要转啥
+- @babel/core 负责把源代码转成 AST，然后遍历 AST，然后重新生成新的代码
+- @babel/core 并不知道如何转换语换法，它并不认识箭头函数，也不知道如何转换，是靠插件来转换的
+- @babel/transform-arrow-functions 插件其实是一个访问器，它知道如何转换 AST 语法树
+- 因为要转换的语法太多，插件也太多。所以可一堆插件打包大一起，成为预设 preset-env
+
+要想在项目中使用自定义 loader
+
+- 1.可以使用绝对路径 `path.resolve(__dirname,'loader/babel-loader.js')`
+- 2.resolveLoader 配置 alias
+- 3.resolveLoader 配置 modules
