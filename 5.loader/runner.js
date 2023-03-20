@@ -1,4 +1,8 @@
-const { runLoaders } = require("loader-runner");
+// wepack原生模块
+// const { runLoaders } = require("loader-runner");
+// 自定义
+const { runLoaders } = require("./loader-runner");
+
 const path = require("path");
 const fs = require("fs"); //webpack-dev-server启开发服务器的时候 memory-fs
 

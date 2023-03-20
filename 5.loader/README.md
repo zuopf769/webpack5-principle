@@ -204,3 +204,15 @@ var __webpack_modules__ = {
   },
 };
 ```
+
+## 4.loader 原理
+
+### 4.1 loader 运行流程
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/20/20-40-13-da0b5f60aecc4901b6d3abb6e97a6301-20230320204012-81345e.png)
+
+### 4.2 loader-runner 实现
+
+- [LoaderRunner.js](https://github.com/webpack/loader-runner/blob/v2.4.0/lib/LoaderRunner.js)
+- [NormalModuleFactory.js](https://github.com/webpack/webpack/blob/v4.39.3/lib/NormalModuleFactory.js#L180)
+- [NormalModule.js](https://github.com/webpack/webpack/blob/v4.39.3/lib/NormalModule.js#L292)
