@@ -1,17 +1,28 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./loaders/less-loader1.js!./src/index.less":
+/*!**************************************************!*\
+  !*** ./loaders/less-loader1.js!./src/index.less ***!
+  \**************************************************/
+/***/ ((module) => {
+
+module.exports = "#root {\n  color: red;\n}\n"
+
+/***/ }),
+
 /***/ "./src/index.less":
 /*!************************!*\
   !*** ./src/index.less ***!
   \************************/
-/***/ (() => {
+/***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
 
-        let style = document.createElement("style");
-        style.innerHTML = "#root {  color: red;}";
-        document.head.appendChild(style);
-      
+     let styleCSS = __webpack_require__(/*! !!../loaders/less-loader1.js!./index.less */ "./loaders/less-loader1.js!./src/index.less");
+     let style = document.createElement('style');
+     style.innerHTML =styleCSS;
+     document.head.appendChild(style);
+   
 
 /***/ })
 

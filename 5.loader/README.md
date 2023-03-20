@@ -183,3 +183,24 @@ npm i @babel/preset-env @babel/core -D
 - [less-loader](https://github.com/webpack-contrib/less-loader) 把 less 编译成 css
 - [pitching-loader](https://webpack.docschina.org/api/loaders/#pitching-loader)
 - [!!](https://webpack.docschina.org/concepts/loaders/#inline)
+
+```js
+// 利用__webpack_require__加载inline的./loaders/less-loader1.js!./src/index.less的模块
+var __webpack_modules__ = {
+  "./loaders/less-loader1.js!./src/index.less": (module) => {
+    module.exports = "#root {\n  color: red;\n}\n";
+  },
+  "./src/index.less": (
+    __unused_webpack_module,
+    __unused_webpack_exports,
+    __webpack_require__
+  ) => {
+    let styleCSS = __webpack_require__(
+      "./loaders/less-loader1.js!./src/index.less"
+    );
+    let style = document.createElement("style");
+    style.innerHTML = styleCSS;
+    document.head.appendChild(style);
+  },
+};
+```

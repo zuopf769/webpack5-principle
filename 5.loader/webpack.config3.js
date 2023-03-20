@@ -26,7 +26,7 @@ module.exports = {
       {
         test: /\.less$/,
         exclude: /node_modules/,
-        use: ["style-loader2", "less-loader1"],
+        use: ["style-loader1", "less-loader1"],
       },
       {
         test: /\.js$/,
