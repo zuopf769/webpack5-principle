@@ -175,3 +175,11 @@ npm i @babel/preset-env @babel/core -D
 - 1.可以使用绝对路径 `path.resolve(__dirname,'loader/babel-loader.js')`
 - 2.resolveLoader 配置 alias
 - 3.resolveLoader 配置 modules
+
+## 3. style-loader
+
+- [css-loader](https://github.com/webpack-contrib/css-loader/blob/master/src/index.js) 的作用是处理 css 中的 @import 和 url 这样的外部资源
+- [style-loader](https://github.com/webpack-contrib/style-loader/blob/master/src/index.js) 的作用是把样式插入到 DOM 中，方法是在 head 中插入一个 style 标签，并把样式写入到这个标签的 innerHTML 里
+- [less-loader](https://github.com/webpack-contrib/less-loader) 把 less 编译成 css
+- [pitching-loader](https://webpack.docschina.org/api/loaders/#pitching-loader)
+- [!!](https://webpack.docschina.org/concepts/loaders/#inline)
