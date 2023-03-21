@@ -12,6 +12,7 @@ function loader(source, ast, inputSourceMap) {
   // 把loader的执行从同步变成异步
   const callback = this.async();
   let options = this.getOptions();
+  // 复用上一个loader的ast和SourceMap
   let babelOptions = {
     ...options,
     ast: true, // 如果两个loader都涉及到了babel转换源码的功能，可以不用都从源码转换成ast，可以直接传过来ast，提高性能

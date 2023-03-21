@@ -26,7 +26,7 @@ module.exports = {
       {
         test: /\.less$/,
         exclude: /node_modules/,
-        use: ["style-loader2", "less-loader1"],
+        use: ["style-loader2", "less-loader1"], // css-loader 是来处理 import 和 url可以先忽略
       },
       {
         test: /\.js$/,

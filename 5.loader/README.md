@@ -150,7 +150,7 @@ pitch 与 loader 本身方法的执行顺序图
 - [babel-loader](https://github.com/babel/babel-loader/blob/master/src/index.js)
 - [babel-core](https://babeljs.io/docs/babel-core.html)
 - [babel-plugin-transform-react-jsx](https://babeljs.io/docs/babel-plugin-transform-react-jsx/)
-- currentRequest 自己和后面的 loader+资源路径
+- currentRequest 自己和后面的 loader + 资源路径
 - remainingRequest 后面的 loader+资源路径
 - data: 和普通的 loader 函数的第三个参数一样,而且 loader 执行的全程用的是同一个对象
 - 注意 sourceMaps 最后有个 s

@@ -40,3 +40,37 @@ inline 有非常特殊而重要的作用 style-loader 的时候
 - 1.可以使用绝对路径 `path.resolve(_dirname,'loader/babel-loader.js')`
 - 2.resolveLoader 配置 alias
 - 3.resolveLoader 配置 modules
+
+## 为啥 es5 转 es6 是异步的呢？
+
+可以是异步，也可以同步
+
+- fs.readFile 同步
+- fs.readFileAsync 异步
+
+## css-loader 的功能
+
+css-loader 是来处理 import 和 url
+
+## pitch 既然会阻断后面文件的读取，那还有什么作用？
+
+- 不 return 只处理逻辑应该可以用 pitch
+- 如果你加载的模块是一个虚拟模块，硬盘上根本没有这个文件，也可以用 pitch，不用最后真正的走到文件
+
+当你想把两个返回 commonjs 代码的 loader 级联使用，就需要 pitch 和!!
+
+- loader 根据返回值可以分为两种，一种是返回 js 代码（一个 module 的代码，含有类似 module.export 语句）的 loader，还有不能作为最左边 loader 的其他 loader
+- 有时候我们想把两个第一种 loader chain 起来，比如 style-loader!css-loader! 问题是 css-loader 的返回值是一串 js 代码，如果按正常方式写 style-loader 的参数就是一串代码字符串
+- 为了解决这种问题，我们需要在 style-loader 里执行 require(css-loader!resources)
+
+## request、remainingRequest、previousRequest、currentRequest
+
+- request = loader1!loader2!loader3!file
+- 目前在 loader2
+- remainingRequest = loader3!file // 不包括当前所在的 loader
+- previousRequest = loader1
+- currentRequest = loader2!loader3!file // 包括当前所在的 loader
+
+## this.context 是 啥？
+
+指的是当前加载的模块所在的目录，它并不是根目录，而是当前模块所在的目录
