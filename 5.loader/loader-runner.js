@@ -11,8 +11,8 @@ function createLoaderObject(loaderAbsPath) {
   const raw = normal.raw;
   return {
     path: loaderAbsPath, // 存放着此loader的绝对路径
-    normal,
-    pitch,
+    normal, // 一定有normal
+    pitch, // 不一定有pitch
     raw,
     data: {}, // 每个loader都有一个自已的自定久对象，可以有用来保存和传递数据
     pitchExecuted: false, // 表示此loader的pitch已经执行过了；防止重复执行
@@ -200,6 +200,7 @@ function iteratePitchingLoaders(
 }
 
 /**
+ * loader不管有没有异步，都是执行完一个loader才能执行下一个loader
  *
  * @param {*} options
  * @param {*} finalCallback 终极callback
@@ -212,7 +213,7 @@ function runLoaders(options, finalCallback) {
   const { resource, loaders = [], context = {}, readResource } = options;
   // loaders现在是一个loader模块的绝对路径，转成一个对象
   const loaderObjects = loaders.map(createLoaderObject);
-  const loaderContext = context; // 这个对象就是loader执行的时候的this指针
+  const loaderContext = context || {}; // 这个对象就是loader执行的时候的this指针
   loaderContext.resource = resource; // 加载的模块
   loaderContext.readResource = readResource; // 读取文件的方法
   loaderContext.loaders = loaderObjects; // 存放loaders对象数组

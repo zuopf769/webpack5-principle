@@ -78,7 +78,7 @@ runLoaders(
   {
     resource, //你要加载的资源
     loaders,
-    context: { name: "zuopf769", age: 30 }, //保存一些状态和值
+    context: { name: "zuopf769", age: 30 }, // 保存一些状态和值
     readResource: fs.readFile.bind(this),
   },
   (err, result) => {
