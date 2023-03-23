@@ -1,9 +1,13 @@
 const { SyncBailHook } = require("tapable");
 
-// bail保险，保险丝，熔断
-// BailHook 中的回调函数也是顺序执行的
-// 调用 call 时传入的参数可以传给回调函数
-// 当回调函数返回非 undefined 值的时候会停止调用后续的回调
+// 同步保险钩子 - 返回值影响执行流程
+
+/**
+ * bail保险、保险丝、熔断
+ * BailHook 中的回调函数也是顺序执行的
+ * 调用 call 时传入的参数可以传给回调函数
+ * 当回调函数返回非 undefined 值的时候会停止调用后续的回调
+ */
 
 /**
  * 形参数组
@@ -22,6 +26,7 @@ hook.tap("2", (name, age) => {
   // return 非 undefined 不会走下一个任务，退出
   return "2";
 });
+// 3不会执行，因为前面的hook返回了不是 undefined 的值
 hook.tap("3", (name, age) => {
   console.log(3, name, age);
 });

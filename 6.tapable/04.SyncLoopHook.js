@@ -1,12 +1,19 @@
 const { SyncLoopHook } = require("tapable");
 
-// SyncLoopHook 的特点是不停的循环执行回调函数，直到函数结果等于 undefined
-// 要注意的是每次循环都是从头开始循环的;
+// SyncLoopHook 同步循环钩子
+
+/**
+ *
+ * SyncLoopHook 的特点是不停的循环执行回调函数，直到函数结果等于 undefined
+ * 要注意的是每次循环都是从头开始循环的;
+ *
+ */
 
 /**
  * 不停的执行回调函数，直到结果等于undefined
  */
 const hook = new SyncLoopHook(["name", "age"]);
+
 let counter1 = 0,
   counter2 = 0,
   counter3 = 0;
@@ -38,7 +45,7 @@ hook.tap("3", (name, age) => {
   return true;
 });
 
-hook.call("zhufeng", 18);
+hook.call("zuopf", 18);
 
 //一共15次 12120 12121 12123
 // 1 counter1 0
