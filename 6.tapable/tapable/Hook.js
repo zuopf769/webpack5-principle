@@ -5,6 +5,7 @@ class Hook {
     this.taps = []; // 这里存放回调的信息（tapInfo的数组）
     this.call = CALL_DELEGATE; // 这是代理的call方法；先放个假的，真正调用的时候再创建一个新的
     this.callAsync = CALL_ASYNC_DELEGATE; // 这是代理的callAsync方法；先放个假的，真正调用的时候再创建一个新的
+    this.promise = PROMISE_DELEGATE; // 这是代理的promise方法；先放个假的，真正调用的时候再创建一个新的
     this._x = null; // 存放回调函数的数组
   }
 
@@ -21,6 +22,10 @@ class Hook {
 
   tapAsync(options, fn) {
     this._tap("async", options, fn);
+  }
+
+  tapPromise(options, fn) {
+    this._tap("promise", options, fn);
   }
 
   /**
@@ -86,6 +91,12 @@ const CALL_ASYNC_DELEGATE = function (...args) {
   this.callAsync = this._createCall("async");
   // 调用新创建的callAsync方法，返回结果
   return this.callAsync(...args);
+};
+
+const PROMISE_DELEGATE = function (...args) {
+  this.promise = this._createCall("promise");
+  // 调用新创建的promise方法，返回结果
+  return this.promise(...args);
 };
 
 module.exports = Hook;

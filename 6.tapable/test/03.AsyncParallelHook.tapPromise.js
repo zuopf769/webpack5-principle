@@ -1,5 +1,5 @@
-const { AsyncParallelHook } = require("tapable");
-// const { AsyncParallelHook } = require("../tapable");
+// const { AsyncParallelHook } = require("tapable");
+const { AsyncParallelHook } = require("../tapable");
 
 debugger;
 

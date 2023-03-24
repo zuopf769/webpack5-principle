@@ -58,6 +58,16 @@ class HookCodeFactory {
           this.args({ after: "_callback" }),
           this.header() + this.content({ onDone: () => "_callback();\n" })
         );
+        break;
+      case "promise":
+        // 之前的钩子函数执行代码，需要包裹在promise里面
+        let tapsContent = this.content({ onDone: () => "_resolve();\n" });
+        // 外面需要包一个Promise，钩子全部执行完毕后结束
+        let content = `return new Promise(function (_resolve, _reject) {
+            ${tapsContent}
+          });`;
+        fn = new Function(this.args(), this.header() + content);
+        break;
       default:
         break;
     }
@@ -116,6 +126,13 @@ class HookCodeFactory {
         code += `_fn${tapIndex}(${this.args()},function () {
             if (--_counter === 0) _done();
         });\n`;
+        break;
+      case "promise":
+        code += `var _promise${tapIndex} = _fn${tapIndex}(${this.args()});\n
+        _promise${tapIndex}.then(function () {
+          if (--_counter === 0) _done();
+        });\n`;
+        break;
       default:
         break;
     }
