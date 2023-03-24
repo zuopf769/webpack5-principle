@@ -16,8 +16,21 @@ class HookCodeFactory {
 
   // 返回形参列表
   // const hook = new SyncHook(["name", "age"]);
-  args() {
-    return this.options.args.join(",");
+  // config用来动态before和after追加参数
+  args(config = {}) {
+    let { before, after } = config;
+    // 重新浅克隆一个args，后面对allArgs的处理不会影响原来的this.options.args
+    let allArgs = [...this.options.args];
+    // 在前面加参数
+    if (before) {
+      allArgs = [before, ...allArgs];
+    }
+    // 在后面加参数
+    if (after) {
+      allArgs = [...allArgs, after];
+    }
+
+    return allArgs.join(",");
   }
 
   // 拼接函数 - 头 具体内容见src/1.syncHook.js
@@ -40,7 +53,11 @@ class HookCodeFactory {
         // this.content()函数体内容，具体需要各个子类实现
         fn = new Function(this.args(), this.header() + this.content());
         break;
-
+      case "async": //创建一个异步并发执行的函数
+        fn = new Function(
+          this.args({ after: "_callback" }),
+          this.header() + this.content({ onDone: () => "_callback();\n" })
+        );
       default:
         break;
     }
@@ -55,6 +72,25 @@ class HookCodeFactory {
     for (let j = 0; j < this.options.taps.length; j++) {
       // 每个tap的执行逻辑代码拼接
       const tapContent = this.callTap(j);
+      code += tapContent;
+    }
+    return code;
+  }
+
+  // 每个并发执行的tap执行逻辑代码拼接
+  callTapsParallel({ onDone }) {
+    const taps = this.options.taps;
+    let code = ``;
+    code += `var _counter = ${taps.length};\n`;
+    code += `
+      var _done = function () {
+        ${onDone()}
+      };
+    `;
+    for (let i = 0; i < taps.length; i++) {
+      const tapContent = this.callTap(i, {
+        onDone: () => `if (--_counter === 0) _done();`,
+      });
       code += tapContent;
     }
     return code;
@@ -76,7 +112,10 @@ class HookCodeFactory {
       case "sync":
         code += `_fn${tapIndex}(${this.args()});\n`; // 执行回调函数的字符串拼接
         break;
-
+      case "async":
+        code += `_fn${tapIndex}(${this.args()},function () {
+            if (--_counter === 0) _done();
+        });\n`;
       default:
         break;
     }

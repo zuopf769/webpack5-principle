@@ -3,7 +3,8 @@ class Hook {
   constructor(args) {
     this.args = Array.isArray(args) ? args : []; // 形参列表存下来 args =['name','age']
     this.taps = []; // 这里存放回调的信息（tapInfo的数组）
-    this.call = CALL_DELEGATE; // 这是代理的CALL方法；先放个假的，真正调用的时候再创建一个新的
+    this.call = CALL_DELEGATE; // 这是代理的call方法；先放个假的，真正调用的时候再创建一个新的
+    this.callAsync = CALL_ASYNC_DELEGATE; // 这是代理的callAsync方法；先放个假的，真正调用的时候再创建一个新的
     this._x = null; // 存放回调函数的数组
   }
 
@@ -16,6 +17,10 @@ class Hook {
     // 如果通过tap注册的回调，那么类型type = "sync"
     // fn要以同步的方式执行
     this._tap("sync", options, fn);
+  }
+
+  tapAsync(options, fn) {
+    this._tap("async", options, fn);
   }
 
   /**
@@ -38,7 +43,16 @@ class Hook {
   }
 
   _insert(tapInfo) {
+    // 每次tap/tapAsync注册新的钩子后，都需要重置this.callAsync和this.call，
+    // 让其能重新编译生成的方法把最新注册的方法加到执行逻辑里面
+    this.resetCompilation();
     this.taps.push(tapInfo);
+  }
+
+  // 重置编译生成的call方法，避免缓存，让其每次调用都能编译出来最新的方法
+  resetCompilation() {
+    this.call = CALL_DELEGATE; //这是代理的CALL方法
+    this.callAsync = CALL_ASYNC_DELEGATE;
   }
 
   // 动态创建call方法
@@ -53,13 +67,25 @@ class Hook {
   }
 }
 
-// call的代理方法，假方法
+// call的代理方法，假方法，用的时候才会动态创建一个
 const CALL_DELEGATE = function (...args) {
   // 动态创建一个sync类型的call方法
   // 重新覆盖this.call
   this.call = this._createCall("sync");
-  // 调用新创建的call方法
+  // 调用新创建的call方法，返回结果
   return this.call(...args);
+};
+
+// 懒编译，真正用的时候才去动态编译创建新的方法
+// call的代理方法，假方法
+const CALL_ASYNC_DELEGATE = function (...args) {
+  // 动态创建一个async类型的call方法
+  // 重新覆盖this.callAsync
+  // 执行过一次后this.callAsync已经有值了，所以会直接调用这里的，就会导致不重新编译了，所以源码中需要重置为CALL_ASYNC_DELEGATE
+  // 让其第二次调用this.callAsync的重新走CALL_ASYNC_DELEGATE方法，重新编译，就能把新注册的方法添加进来了
+  this.callAsync = this._createCall("async");
+  // 调用新创建的callAsync方法，返回结果
+  return this.callAsync(...args);
 };
 
 module.exports = Hook;
