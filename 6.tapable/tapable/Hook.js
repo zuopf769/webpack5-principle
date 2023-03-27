@@ -79,7 +79,7 @@ class Hook {
     // this.taps.push(tapInfo);
 
     // before，可以改变tap钩子的执行顺序
-    // before最后是个数组
+    // before最后是个数组，兼容字符串和数组
     let before;
     if (typeof tapInfo.before === "string") {
       before = new Set([tapInfo.before]);
@@ -87,13 +87,15 @@ class Hook {
       // 用set就是为了去重
       before = new Set(tapInfo.before);
     }
+
     // tap的阶段值，可以改变tap钩子的执行顺序
     let stage = 0;
     if (typeof tapInfo.stage === "number") {
       stage = tapInfo.stage; //新注册的回调 tapInfo的阶段值
     }
+
     // 插入排序，保证stage值小的在前面
-    // 从后往前对比排序，因为目前已经是排好序的，从后面开始往前数组移动的数据比较少
+    // 从后往前对比排序，为什么不采用从前往后对比排序？因为目前已经是排好序的，从后面开始往前数组移动的数据比较少
     let i = this.taps.length;
     while (i > 0) {
       // --是为了取出原来的tap
@@ -106,14 +108,17 @@ class Hook {
       if (before) {
         if (before.has(x.name)) {
           // 找到了就删除before中的那个tap，因为指针会往前
-          before.delete(x.name);
+          before.delete(x.name); // 已经超过了x.name比如tap3
           // 继续找要放在其前面的tap
           continue;
         }
         if (before.size > 0) {
+          // size > 0 说明还没有超越所有想超越的回调
+          // size == 0 就表明你想超越的都已经超越了
           continue;
         }
       }
+
       // 找到比当前的stage阶段小的tap，插入到他的后面
       const xStage = x.stage || 0;
       if (xStage > stage) {

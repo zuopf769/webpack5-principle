@@ -6,6 +6,8 @@ const syncHook = new SyncHook(["name", "age"]);
 // 如果不加stage，默认状态taps按注册的顺序执行
 // stage阶段，执行阶段
 // stage值越小表示越优先执行
+
+// 缺点：stage必须注册的所有钩子都得同时使用
 syncHook.tap({ name: "tap1", stage: 1 }, () => {
   console.log("tap1");
 });

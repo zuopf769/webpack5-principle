@@ -7,9 +7,13 @@ const hook = new AsyncParallelHook(["name", "age"]);
 console.time("cost");
 
 /**
- * AsyncParallelHook可以同时使用tap、tapAsync、tapPromise来注册
+ * AsyncParallelHook可以同时使用tap（同步）、tapAsync（setTimeout异步）、tapPromise（Promise异步）来注册
  * 但是会把同步也当做异步来执行
  */
+
+// 可以同时注册同步钩子和异步钩子么？可以
+// 如果注册的同时有同步和异步，只能通过异步处理
+// 同步如果当做异步来处理呢：同步会立即执行完成Dnoe
 
 // 使用tap来注册同步回调
 // 会把同步也当做异步来执行

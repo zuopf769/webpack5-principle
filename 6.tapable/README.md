@@ -94,7 +94,7 @@ let fn2 = (name, age) => {
   console.log(2, name, age);
 };
 syncHook.tap("2", fn2);
-syncHook.call("zhufeng", 10);
+syncHook.call("zuopf", 10);
 
 /**
 (function anonymous(name, age) {
@@ -133,7 +133,7 @@ hook.tapAsync("3", (name, age, callback) => {
   }, 3000);
 });
 debugger;
-hook.callAsync("zhufeng", 10, (err) => {
+hook.callAsync("zuopf", 10, (err) => {
   console.log(err);
   console.timeEnd("cost");
 });
@@ -191,7 +191,7 @@ queue.tapPromise("3", function (name, age) {
     }, 3000);
   });
 });
-queue.promise("zhufeng", 10).then(
+queue.promise("zuopf", 10).then(
   (result) => {
     console.timeEnd("cost");
   },
@@ -244,3 +244,127 @@ queue.promise("zhufeng", 10).then(
   - tap: (tap: Tap) => void 每个钩子执行之前(多个钩子执行多个),就会触发这个函数
   - register:(tap: Tap) => Tap | undefined 每添加一个 Tap 都会触发 你 interceptor 上的 register,你下一个拦截器的 register 函数得到的参数 取决于你上一个 register 返回的值,所以你最好返回一个 tap 钩子.
 - Context(上下文) 插件和拦截器都可以选择加入一个可选的 context 对象, 这个可以被用于传递随意的值到队列中的插件和拦截器
+
+```js
+const { SyncHook } = require("tapable");
+const syncHook = new SyncHook(["name", "age"]);
+syncHook.intercept({
+  register: (tapInfo) => {
+    //当你新注册一个回调函数的时候触发
+    console.log(`拦截器1开始register`);
+    return tapInfo;
+  },
+  tap: (tapInfo) => {
+    //每个回调函数都会触发一次
+    console.log(`拦截器1开始tap`);
+  },
+  call: (name, age) => {
+    //每个call触发，所有的回调只会总共触发一次
+    console.log(`拦截器1开始call`, name, age);
+  },
+});
+syncHook.intercept({
+  register: (tapInfo) => {
+    //当你新注册一个回调函数的时候触发
+    console.log(`拦截器2开始register`);
+    return tapInfo;
+  },
+  tap: (tapInfo) => {
+    //每个回调函数都会触发一次
+    console.log(`拦截器2开始tap`);
+  },
+  call: (name, age) => {
+    //每个call触发，所有的回调只会总共触发一次
+    console.log(`拦截器2开始call`, name, age);
+  },
+});
+
+syncHook.tap({ name: "回调函数A" }, (name, age) => {
+  console.log(`回调A`, name, age);
+});
+//console.log(syncHook.taps[0]);
+syncHook.tap({ name: "回调函数B" }, (name, age) => {
+  console.log("回调B", name, age);
+});
+debugger;
+syncHook.call("zuopf", 10);
+
+/**
+拦截器1开始register
+拦截器2开始register
+拦截器1开始register
+拦截器2开始register
+
+拦截器1开始call zuopf 10
+拦截器2开始call zuopf 10
+
+拦截器1开始tap
+拦截器2开始tap
+回调A zuopf 10
+
+拦截器1开始tap
+拦截器2开始tap
+回调B zuopf 10
+*/
+```
+
+## 8. stage
+
+```js
+let { SyncHook } = require("tapable");
+let hook = new SyncHook(["name"]);
+debugger;
+hook.tap({ name: "tap1", stage: 1 }, (name) => {
+  console.log(1, name);
+});
+hook.tap({ name: "tap3", stage: 3 }, (name) => {
+  console.log(3, name);
+});
+hook.tap({ name: "tap5", stage: 5 }, (name) => {
+  console.log(4, name);
+});
+hook.tap({ name: "tap2", stage: 2 }, (name) => {
+  console.log(2, name);
+});
+
+hook.call("zuopf");
+```
+
+## 9. before
+
+```js
+let { SyncHook } = require("tapable");
+let hook = new SyncHook(["name"]);
+debugger;
+hook.tap({ name: "tap1" }, (name) => {
+  console.log(1, name);
+});
+hook.tap({ name: "tap3" }, (name) => {
+  console.log(3, name);
+});
+hook.tap({ name: "tap5" }, (name) => {
+  console.log(4, name);
+});
+hook.tap({ name: "tap2", before: ["tap3", "tap5"] }, (name) => {
+  console.log(2, name);
+});
+
+hook.call("zuopf");
+```
+
+## HookMap
+
+A HookMap is a helper class for a Map with Hooks
+
+```js
+let { SyncHook, HookMap } = require("./tapable");
+const keyedHookMap = new HookMap(() => new SyncHook(["name"]));
+keyedHookMap.for("key1").tap("plugin1", (name) => {
+  console.log(1, name);
+});
+keyedHookMap.for("key1").tap("plugin2", (name) => {
+  console.log(2, name);
+});
+const hook1 = keyedHookMap.get("key1");
+hook1.call("zuopf");
+```
