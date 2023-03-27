@@ -77,6 +77,17 @@ class Hook {
     this.resetCompilation();
     // 默认是按注册的顺序存放和执行
     // this.taps.push(tapInfo);
+
+    // before，可以改变tap钩子的执行顺序
+    // before最后是个数组
+    let before;
+    if (typeof tapInfo.before === "string") {
+      before = new Set([tapInfo.before]);
+    } else if (Array.isArray(tapInfo.before)) {
+      // 用set就是为了去重
+      before = new Set(tapInfo.before);
+    }
+    // tap的阶段值，可以改变tap钩子的执行顺序
     let stage = 0;
     if (typeof tapInfo.stage === "number") {
       stage = tapInfo.stage; //新注册的回调 tapInfo的阶段值
@@ -90,6 +101,20 @@ class Hook {
       const x = this.taps[i];
       // 数组容量+1扩容
       this.taps[i + 1] = x;
+
+      // 找到要插入到的tap之前
+      if (before) {
+        if (before.has(x.name)) {
+          // 找到了就删除before中的那个tap，因为指针会往前
+          before.delete(x.name);
+          // 继续找要放在其前面的tap
+          continue;
+        }
+        if (before.size > 0) {
+          continue;
+        }
+      }
+      // 找到比当前的stage阶段小的tap，插入到他的后面
       const xStage = x.stage || 0;
       if (xStage > stage) {
         //如果当前值比要插入的值要大，继续
