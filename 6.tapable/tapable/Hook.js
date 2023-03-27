@@ -75,7 +75,33 @@ class Hook {
     // 每次tap/tapAsync注册新的钩子后，都需要重置this.callAsync和this.call，
     // 让其能重新编译生成的方法把最新注册的方法加到执行逻辑里面
     this.resetCompilation();
-    this.taps.push(tapInfo);
+    // 默认是按注册的顺序存放和执行
+    // this.taps.push(tapInfo);
+    let stage = 0;
+    if (typeof tapInfo.stage === "number") {
+      stage = tapInfo.stage; //新注册的回调 tapInfo的阶段值
+    }
+    // 插入排序，保证stage值小的在前面
+    // 从后往前对比排序，因为目前已经是排好序的，从后面开始往前数组移动的数据比较少
+    let i = this.taps.length;
+    while (i > 0) {
+      // --是为了取出原来的tap
+      i--;
+      const x = this.taps[i];
+      // 数组容量+1扩容
+      this.taps[i + 1] = x;
+      const xStage = x.stage || 0;
+      if (xStage > stage) {
+        //如果当前值比要插入的值要大，继续
+        continue;
+      }
+      // 找到比他小的tap后，就退出循环放在他的后面
+      // 所以如果stage阶段值相同，先注册的先执行
+      i++;
+      break;
+    }
+    // 第一次注册的时候，以及插入排序
+    this.taps[i] = tapInfo;
   }
 
   // 重置编译生成的call方法，避免缓存，让其每次调用都能编译出来最新的方法
