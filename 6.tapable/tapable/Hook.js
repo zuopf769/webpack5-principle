@@ -90,7 +90,7 @@ class Hook {
     return this.compile({
       taps: this.taps,
       args: this.args,
-      interceptors: this.interceptors,
+      interceptors: this.interceptors, // 传递注册的拦截器
       type,
     });
   }
