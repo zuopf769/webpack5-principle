@@ -66,6 +66,181 @@ const {
 
 ## 3.使用
 
+usage 目录细
+
 > 01 ~ 09
 
 ## 4.SyncHook
+
+tapable 目录下自定义 tapable 的代码
+
+- 所有的构造函数都接收一个可选参数，参数是一个参数名的字符串数组
+- 参数的名字可以任意填写，但是参数数组的长数必须要根实际接受的参数个数一致
+- 如果回调函数不接受参数，可以传入空数组
+- 在实例化的时候传入的数组长度长度有用，值没有用途
+- 执行 call 时，参数个数和实例化时的数组长度有关
+- 回调的时候是按先入先出的顺序执行的，先放的先执行
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/27/15-14-29-e59240949e9a4ec45b9548fa4f2b398a-20230327151428-243752.png)
+
+```js
+const { SyncHook } = require("./tapable");
+let syncHook = new SyncHook(["name", "age"]);
+let fn1 = (name, age) => {
+  console.log(1, name, age);
+};
+syncHook.tap({ name: "1" }, fn1);
+let fn2 = (name, age) => {
+  console.log(2, name, age);
+};
+syncHook.tap("2", fn2);
+syncHook.call("zhufeng", 10);
+
+/**
+(function anonymous(name, age) {
+    var _x = this._x;
+    var _fn0 = _x[0];
+    _fn0(name, age);
+    var _fn1 = _x[1];
+    _fn1(name, age);
+})
+*/
+```
+
+## 5.AsyncParallelHook.callAsync
+
+```js
+const { AsyncParallelHook } = require("tapable");
+const hook = new AsyncParallelHook(["name", "age"]);
+console.time("cost");
+
+hook.tapAsync("1", (name, age, callback) => {
+  setTimeout(() => {
+    console.log(1, name, age);
+    callback();
+  }, 1000);
+});
+hook.tapAsync("2", (name, age, callback) => {
+  setTimeout(() => {
+    console.log(2, name, age);
+    callback();
+  }, 2000);
+});
+hook.tapAsync("3", (name, age, callback) => {
+  setTimeout(() => {
+    console.log(3, name, age);
+    callback();
+  }, 3000);
+});
+debugger;
+hook.callAsync("zhufeng", 10, (err) => {
+  console.log(err);
+  console.timeEnd("cost");
+});
+/**
+(function anonymous(name, age, _callback) {
+  var _x = this._x;
+  var _counter = 3;
+  var _done = function () {
+    _callback();
+  };
+  var _fn0 = _x[0];
+  _fn0(name, age, function (_err0) {
+    if (--_counter === 0) _done();
+  });
+  var _fn1 = _x[1];
+  _fn1(name, age, function (_err1) {
+    if (--_counter === 0) _done();
+  });
+  var _fn2 = _x[2];
+  _fn2(name, age, function (_err2) {
+    if (--_counter === 0) _done();
+  });
+});
+ */
+```
+
+## 6.AsyncParallelHook.callPromise
+
+```js
+//let { AsyncParallelHook } = require("tapable");
+let { AsyncParallelHook } = require("./tapable2");
+let queue = new AsyncParallelHook(["name", "age"]);
+console.time("cost");
+queue.tapPromise("1", function (name, age) {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      console.log(1, name, age);
+      resolve();
+    }, 1000);
+  });
+});
+queue.tapPromise("2", function (name, age) {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      console.log(2, name, age);
+      resolve();
+    }, 2000);
+  });
+});
+queue.tapPromise("3", function (name, age) {
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      console.log(3, name, age);
+      resolve();
+    }, 3000);
+  });
+});
+queue.promise("zhufeng", 10).then(
+  (result) => {
+    console.timeEnd("cost");
+  },
+  (error) => {
+    console.log(error);
+    console.timeEnd("cost");
+  }
+);
+/**
+ (function anonymous(name, age) {
+    var _x = this._x;
+    return new Promise(function (_resolve, _reject) {
+        var _counter = 3;
+        var _done = function () {
+            _resolve();
+        };
+
+        var _fn0 = _x[0];
+        var _promise0 = _fn0(name, age);
+        _promise0.then(
+            function () {
+                if (--_counter === 0) _done();
+            }
+        );
+
+        var _fn1 = _x[1];
+        var _promise1 = _fn1(name, age);
+        _promise1.then(
+            function () {
+                if (--_counter === 0) _done();
+            }
+        );
+
+        var _fn2 = _x[2];
+        var _promise2 = _fn0(name, age);
+        _promise2.then(
+            function () {
+                if (--_counter === 0) _done();
+            }
+        );
+    });
+});
+ */
+```
+
+## 7. interceptor
+
+- 所有钩子都提供额外的拦截器 API
+  - call:(...args) => void 当你的钩子触发之前,(就是 call()之前),就会触发这个函数,你可以访问钩子的参数.多个钩子执行一次
+  - tap: (tap: Tap) => void 每个钩子执行之前(多个钩子执行多个),就会触发这个函数
+  - register:(tap: Tap) => Tap | undefined 每添加一个 Tap 都会触发 你 interceptor 上的 register,你下一个拦截器的 register 函数得到的参数 取决于你上一个 register 返回的值,所以你最好返回一个 tap 钩子.
+- Context(上下文) 插件和拦截器都可以选择加入一个可选的 context 对象, 这个可以被用于传递随意的值到队列中的插件和拦截器

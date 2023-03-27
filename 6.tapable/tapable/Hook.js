@@ -6,6 +6,7 @@ class Hook {
     this.call = CALL_DELEGATE; // 这是代理的call方法；先放个假的，真正调用的时候再创建一个新的
     this.callAsync = CALL_ASYNC_DELEGATE; // 这是代理的callAsync方法；先放个假的，真正调用的时候再创建一个新的
     this.promise = PROMISE_DELEGATE; // 这是代理的promise方法；先放个假的，真正调用的时候再创建一个新的
+    this.interceptors = []; // 拦截器
     this._x = null; // 存放回调函数的数组
   }
 
@@ -42,9 +43,32 @@ class Hook {
       };
     }
     // 回调的信息
-    const tapInfo = { ...options, type, fn }; // type是回调函数的类型
+    let tapInfo = { ...options, type, fn }; // type是回调函数的类型
+    // 调用Interceptors的register函数
+    tapInfo = this.runRegisterInterceptors(tapInfo);
     // 往taps数组中插入回调的信息对象
     this._insert(tapInfo);
+  }
+
+  // 调用所有的Interceptors的register函数
+  runRegisterInterceptors(tapInfo) {
+    // 可以同时写多个interceptors
+    for (const interceptor of this.interceptors) {
+      if (interceptor.register) {
+        // register方法就是注册钩子的时候执行如： 使用tap注册一个同步钩子的时候就执行一次
+        let newTapInfo = interceptor.register(tapInfo);
+        // 如果register返回tapInfo
+        if (newTapInfo) {
+          tapInfo = newTapInfo;
+        }
+      }
+    }
+    return tapInfo;
+  }
+
+  // 注册intercept
+  intercept(interceptor) {
+    this.interceptors.push(interceptor);
   }
 
   _insert(tapInfo) {
