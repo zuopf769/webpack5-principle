@@ -111,7 +111,8 @@ class HookCodeFactory {
   }
 
   // 获取每一个回调它的代码
-  callTap(tapIndex) {
+  callTap(tapIndex, options = {}) {
+    const { onDone } = options;
     let code = ``;
     // 具体内容见src/1.syncHook.js  var _fn0 = _x[0];
     // _x变量已经在header中加上了
@@ -121,6 +122,7 @@ class HookCodeFactory {
     switch (tapInfo.type) {
       case "sync":
         code += `_fn${tapIndex}(${this.args()});\n`; // 执行回调函数的字符串拼接
+        if (onDone) code += onDone(); // 在异步后缀中tap注册钩子时，需要执行回调；因为可能异步钩子注册的都是同步钩子
         break;
       case "async":
         code += `_fn${tapIndex}(${this.args()},function () {
