@@ -1,15 +1,13 @@
 const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const SpeedMeasureWebpackPlugin = require("speed-measure-webpack-plugin");
-const smw = new SpeedMeasureWebpackPlugin();
 
 const bootstrap = path.resolve(
   __dirname,
   "node_modules/bootstrap/dist/css/bootstrap.css"
 );
 
-module.exports = smw.wrap({
+module.exports = {
   mode: "development",
   devtool: false,
   entry: {
@@ -59,4 +57,4 @@ module.exports = smw.wrap({
       resourceRegExp: /^\.\/locale/, //请求的正则
     }),
   ],
-});
+};

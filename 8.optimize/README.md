@@ -165,3 +165,12 @@ webpack.config.js
 
 - 第一个是匹配引入模块路径的正则表达式
 - 第二个是匹配模块的对应上下文，即所在目录名
+
+## 4.费时分析
+
+```JavaScript
+const SpeedMeasureWebpackPlugin = require('speed-measure-webpack-plugin');
+const smw = new SpeedMeasureWebpackPlugin();
+module.exports =smw.wrap({
+});
+```
