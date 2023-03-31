@@ -1,2 +1,3 @@
-var a = 1;
-console.log("log", a);
+import _ from "lodash";
+let $ = require("jquery");
+console.log(_, $);

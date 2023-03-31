@@ -16,7 +16,9 @@
     "webpack-dev-server": "^4.13.1"
   },
   "dependencies": {
+    "jquery": "^3.6.4",
     "jszip": "^3.10.1",
+    "lodash": "^4.17.21",
     "webpack-sources": "^3.2.3"
   }
 }
