@@ -55,3 +55,56 @@ resolve: {
    modules: ['mymodules', 'node_modules'],
 }
 ```
+
+### 1.4 mainFields
+
+默认情况下 package.json 文件则按照文件中 main 字段的文件名来查找文件
+
+例如 bootstrap 的 package.json 中的字段
+
+```JSON
+{
+ "main": "dist/js/bootstrap.js",
+  "module": "dist/js/bootstrap.esm.js",
+  "sass": "scss/bootstrap.scss",
+  "style": "dist/css/bootstrap.css",
+}
+```
+
+```JavaScript
+resolve: {
+  // 配置 target === "web" 或者 target === "webworker" 时 mainFields 默认值是：
+  mainFields: ['browser', 'module', 'main'],
+}
+```
+
+```JavaScript
+resolve: {
+  // target 的值为其他时，mainFields 默认值为：
+  mainFields: ["module", "main"],
+}
+```
+
+### 1.5 mainFiles
+
+当目录下没有 package.json 文件时，我们说会默认使用目录下的 index.js 这个文件，其实这个也是可以配置的
+
+```JavaScript
+resolve: {
+  mainFiles: ['index'], // 你可以添加其他默认使用的文件名
+},
+```
+
+### 1.6 resolveLoader
+
+resolve.resolveLoader 用于配置解析 loader 时的 resolve 配置,默认的配置
+
+```JavaScript
+module.exports = {
+  resolveLoader: {
+    modules: [ 'node_modules' ],
+    extensions: [ '.js', '.json' ],
+    mainFields: [ 'loader', 'main' ]
+  }
+};
+```

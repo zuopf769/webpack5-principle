@@ -24,13 +24,20 @@ module.exports = {
     alias: {
       bootstrap,
     },
+    // import加载第三方模块的目录，默认是node_modules目录，也可以追加自定义的目录如mymodules目录
     modules: ["mymodules", "node_modules"],
+    mainFields: ["style", "main"], // 指定查找package.json中的字段顺序，改变了默认的查找规则；默认规则是["module", "main"],
+  },
+  // 指定如何查找loader
+  resolveLoader: {
+    extensions: [".js"],
+    modules: ["loaders", "node_modules"],
   },
   module: {
     rules: [
       {
         test: /\.css$/,
-        use: ["style-loader", "css-loader"],
+        use: ["style-loader", "my-loader1", "my-loader2", "css-loader"],
       },
     ],
   },
