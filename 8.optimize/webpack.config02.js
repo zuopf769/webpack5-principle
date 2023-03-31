@@ -3,7 +3,6 @@ const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const SpeedMeasureWebpackPlugin = require("speed-measure-webpack-plugin");
 const smw = new SpeedMeasureWebpackPlugin();
-const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 
 const bootstrap = path.resolve(
   __dirname,
@@ -59,6 +58,5 @@ module.exports = smw.wrap({
       contextRegExp: /moment$/, //目录的正则
       resourceRegExp: /^\.\/locale/, //请求的正则
     }),
-    new BundleAnalyzerPlugin(),
   ],
 });

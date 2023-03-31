@@ -176,3 +176,21 @@ const smw = new SpeedMeasureWebpackPlugin();
 module.exports =smw.wrap({
 });
 ```
+
+## 5.webpack-bundle-analyzer
+
+是一个 webpack 的插件，需要配合 webpack 和 webpack-cli 一起使用。这个插件的功能是生成代码分析报告，帮助提升代码质量和网站性能
+
+```shell
+npm i webpack-bundle-analyzer -D
+
+```
+
+```JavaScript
+const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer');
+module.exports={
+  plugins: [
+    new BundleAnalyzerPlugin()
+  ]
+}
+```
