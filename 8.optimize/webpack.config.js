@@ -1,4 +1,5 @@
 const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const bootstrap = path.resolve(
   __dirname,
@@ -23,14 +24,19 @@ module.exports = {
     alias: {
       bootstrap,
     },
+    modules: ["mymodules", "node_modules"],
   },
   module: {
     rules: [
       {
         test: /\.css$/,
-        use: ["css-loader"],
+        use: ["style-loader", "css-loader"],
       },
     ],
   },
-  plugins: [],
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+    }),
+  ],
 };

@@ -7,6 +7,5 @@
   },
   "css.validate": false,
   "scss.validate": false,
-  "stylelint.validate": ["css", "postcss", "scss"],
-  "typescript.tsdk": "./node_modules/typescript/lib"
+  "stylelint.validate": ["css", "postcss", "scss"]
 }
