@@ -168,6 +168,8 @@ webpack.config.js
 
 ## 4.费时分析
 
+可以查看 webpack 构建的工作流中哪个 loader 或者 plugin 的消耗时间最长
+
 ```JavaScript
 const SpeedMeasureWebpackPlugin = require('speed-measure-webpack-plugin');
 const smw = new SpeedMeasureWebpackPlugin();
