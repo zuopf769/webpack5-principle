@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const bootstrap = path.resolve(
@@ -34,6 +35,12 @@ module.exports = {
     modules: ["loaders", "node_modules"],
   },
   module: {
+    // 一般来说webpack拿到模块后要分析里面的依赖的模块import/require
+    // 某些模块我们知道它肯定没有依赖别的模块 如jquery lodash,所以可以省这一步
+    noParse: /jquery|lodash/,
+    noParse(request) {
+      return /jquery|lodash/.test(request);
+    },
     rules: [
       {
         test: /\.css$/,
@@ -44,6 +51,10 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: "./src/index.html",
+    }),
+    new webpack.IgnorePlugin({
+      contextRegExp: /moment$/, //目录的正则
+      resourceRegExp: /^\.\/locale/, //请求的正则
     }),
   ],
 };

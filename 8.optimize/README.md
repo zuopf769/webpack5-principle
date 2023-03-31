@@ -108,3 +108,60 @@ module.exports = {
   }
 };
 ```
+
+## 2. noParse
+
+- module.noParse 字段，可以用于配置哪些模块文件的内容不需要进行解析
+- 不需要解析依赖（即无依赖） 的第三方大型类库等，可以通过这个字段来配置，以提高整体的构建速度
+- 例如我们知道 jquery 和 lodash 不会依赖其他的第三方库，所以可以配置成 noParse，告诉 webpack 不需要对他们两个的内容进行解析了
+
+```JavaScript
+module.exports = {
+// ...
+module: {
+  noParse: /jquery|lodash/, // 正则表达式
+  // 或者使用函数
+  noParse(content) {
+    return /jquery|lodash/.test(content)
+  },
+}
+}
+// ...
+```
+
+> 使用 noParse 进行忽略的模块文件中不能使用 import、require、define 等导入机制
+
+## 3. IgnorePlugin
+
+### 3.1 src/index.js
+
+默认 moment 会把会有的语言包都打到产物里面
+
+```JavaScript
+import moment from  'moment';
+console.log(moment().format('MMMM Do YYYY, h:mm:ss a'));
+
+```
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/03/31/19-22-25-7513c18ffd10e4a55fcb390d2e4abe44-20230331192224-eb4d46.png)
+
+### 3.2 按需加载所需要的语言包
+
+```JavaScript
+import moment from  'moment';
+import 'moment/locale/zh-cn'
+console.log(moment().format('MMMM Do YYYY, h:mm:ss a'));
+
+```
+
+webpack.config.js
+
+```JavaScript
+ new webpack.IgnorePlugin({
+      contextRegExp: /moment$/,//目录的正则
+      resourceRegExp: /^\.\/locale/   //请求的正则
+    }),
+```
+
+- 第一个是匹配引入模块路径的正则表达式
+- 第二个是匹配模块的对应上下文，即所在目录名
