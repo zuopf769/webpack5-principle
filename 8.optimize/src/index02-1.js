@@ -1,4 +1,4 @@
-import any from "any/base";
+import any from "any";
 
 // 可以配置mainFiles: ["index.js", "base.js"]
 // import any from "any";

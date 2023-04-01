@@ -1,0 +1,2 @@
+- commonjs 就是把导出的对象持到 exports 的属性上
+- commonjs2 module.exports

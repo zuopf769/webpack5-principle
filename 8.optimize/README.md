@@ -194,3 +194,182 @@ module.exports={
   ]
 }
 ```
+
+## 6. libraryTarget 和 library
+
+[output.librarytarget](https://webpack.js.org/configuration/output/#outputlibrarytarget)
+
+- 当用 Webpack 去构建一个可以被其他模块导入使用的库时需要用到它们
+- webpack 不仅仅可以打包 web 项目应用，也可以打包库 library，供别的模块或者项目应用来使用
+
+* output.library 配置导出库的名称
+* output.libraryExport 配置要导出的模块中哪些子模块需要被导出。 它只有在 output.libraryTarget 被设置成 commonjs 或者 commonjs2 时使用才有意义
+* output.libraryTarget 配置以何种方式导出库,是字符串的枚举类型，支持以下配置
+
+| libraryTarget | 使用者的引入方式                      | 使用者提供给被使用者的模块的方式         |
+| ------------- | ------------------------------------- | ---------------------------------------- |
+| var           | 只能以 script 标签的形式引入我们的库  | 只能以全局变量的形式提供这些被依赖的模块 |
+| commonjs      | 只能按照 commonjs 的规范引入我们的库  | 被依赖模块需要按照 commonjs 规范引入     |
+| commonjs2     | 只能按照 commonjs2 的规范引入我们的库 | 被依赖模块需要按照 commonjs2 规范引入    |
+| amd           | 只能按 amd 规范引入                   | 被依赖的模块需要按照 amd 规范引入        |
+| this          |                                       |                                          |
+| window        |                                       |                                          |
+| global        |                                       |                                          |
+| umd           | 可以用 script、commonjs、amd 引入     | 按对应的方式引入                         |
+
+### 6.1 var (默认)
+
+编写的库将通过 var 被赋值给通过 library 指定名称的变量。
+
+#### 6.1.1 webpack.config.js
+
+```JavaScript
+{
+  output: {
+        path: path.resolve("build"),
+        filename: "[name].js",
++       library:'calculator',
++       libraryTarget:'var'
+  }
+}
+```
+
+#### 6.1.2 index.js
+
+```JavaScript
+module.exports =  {
+    add(a,b) {
+        return a+b;
+    }
+}
+```
+
+#### 6.1.3 bundle.js
+
+```JavaScript
+var calculator=(function (modules) {}({})
+```
+
+#### 6.1.4 index.html
+
+```html
+<script src="bundle.js"></script>
+<script>
+  let ret = calculator.add(1, 2);
+  console.log(ret);
+</script>
+```
+
+### 6.2 commonjs
+
+编写的库将通过 CommonJS 规范导出。
+
+#### 6.2.1 导出方式
+
+```JavaScript
+exports["calculator"] = (function (modules) {}({})
+```
+
+#### 6.2.2 使用方式
+
+```JavaScript
+let main = require('./main');
+console.log(main.calculator.add(1,2));
+```
+
+```JavaScript
+require('npm-name')['calculator'].add(1,2);
+```
+
+> npm-name 是指模块发布到 Npm 代码仓库时的名称
+
+### 6.3 commonjs2
+
+编写的库将通过 CommonJS 规范导出。
+
+和 commonjs 的区别就是导出方式的不同，一个是 exports.xxx= xxx；一个是 module.exports = xxxx
+
+#### 6.3.1 导出方式
+
+```JavaScript
+module.exports = (function (modules) {}({})
+```
+
+#### 6.3.2 使用方式
+
+```JavaScript
+require('npm-name').add();
+```
+
+> 在 output.libraryTarget 为 commonjs2 时，配置 output.library 将没有意义。
+
+### 6.4 this
+
+编写的库将通过 this 被赋值给通过 library 指定的名称，输出和使用的代码如下：
+
+#### 6.4.1 导出方式
+
+```JavaScript
+this["calculator"]= (function (modules) {}({})
+```
+
+#### 6.4.2 使用方式
+
+```JavaScript
+this.calculator.add();
+```
+
+### 6.5 window
+
+编写的库将通过 window 被赋值给通过 library 指定的名称，即把库挂载到 window 上，输出和使用的代码如下：
+
+#### 6.5.1 导出方式
+
+```JavaScript
+window["calculator"]= (function (modules) {}({})
+```
+
+#### 6.5.2 使用方式
+
+```JavaScript
+window.calculator.add();
+window["calculator"]= (function (modules) {}({})
+```
+
+### 6.6 global
+
+编写的库将通过 global 被赋值给通过 library 指定的名称，即把库挂载到 global 上，输出和使用的代码如下：
+
+#### 6.6.1 导出方式
+
+```JavaScript
+global["calculator"]= (function (modules) {}({})
+
+```
+
+#### 6.6.2 使用方式
+
+```JavaScript
+global.calculator.add();
+```
+
+### 6.7 umd
+
+```JavaScript
+(function webpackUniversalModuleDefinition(root, factory) {
+  // commonjs2
+  if(typeof exports === 'object' && typeof module === 'object')
+    module.exports = factory();
+  // amd
+  else if(typeof define === 'function' && define.amd)
+    define([], factory);
+  // commonjs
+  else if(typeof exports === 'object')
+    exports['MyLibrary'] = factory();
+  else
+    root['MyLibrary'] = factory();
+})(typeof self !== 'undefined' ? self : this, function() {
+  return _entry_return_;
+});
+
+```

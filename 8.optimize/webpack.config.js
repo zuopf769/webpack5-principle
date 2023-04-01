@@ -17,7 +17,11 @@ module.exports = smw.wrap({
     main: "./src/index.js",
   },
   output: {
+    path: path.resolve("build"),
     filename: "[name].js",
+    library: "calculator",
+    libraryExport: "add",
+    libraryTarget: "umd", // 配置要导出的模块中哪些子模块需要被导出。 它只有在 output.libraryTarget 被设置成 commonjs 或者 commonjs2 时使用才有意义
     clean: true,
   },
   // resolve模块解析: 配置如何查找源代码中引入的模块
@@ -30,9 +34,12 @@ module.exports = smw.wrap({
     },
     // import加载第三方模块的目录，默认是node_modules目录，也可以追加自定义的目录如mymodules目录
     modules: ["mymodules", "node_modules"],
+    // main入口字段
     mainFields: ["style", "main"], // 指定查找package.json中的字段顺序，改变了默认的查找规则；默认规则是["module", "main"],
+    // main入口文件名，没有package.json文件的时候，优先级高的放前面，从前往后匹配
+    mainFiles: ["index.js", "base.js"], // 指定模块默认加载文件名，加载模块时默认加载的文件
   },
-  // 指定如何查找loader
+  // 指定如何查找loader，和上面的resolve配置一样
   resolveLoader: {
     extensions: [".js"],
     modules: ["loaders", "node_modules"],
@@ -40,14 +47,17 @@ module.exports = smw.wrap({
   module: {
     // 一般来说webpack拿到模块后要分析里面的依赖的模块import/require
     // 某些模块我们知道它肯定没有依赖别的模块 如jquery lodash,所以可以省这一步
+    // 正则
     noParse: /jquery|lodash/,
+    // 函数
     noParse(request) {
+      // 返回true就是不解析
       return /jquery|lodash/.test(request);
     },
     rules: [
       {
         test: /\.css$/,
-        use: ["style-loader", "my-loader1", "my-loader2", "css-loader"],
+        use: ["style-loader", "css-loader"],
       },
     ],
   },
@@ -55,10 +65,11 @@ module.exports = smw.wrap({
     new HtmlWebpackPlugin({
       template: "./src/index.html",
     }),
+    // moment文件夹下面的local文件不参与打包
     new webpack.IgnorePlugin({
-      contextRegExp: /moment$/, //目录的正则
+      contextRegExp: /moment$/, // 目录的正则
       resourceRegExp: /^\.\/locale/, //请求的正则
     }),
-    new BundleAnalyzerPlugin(),
+    // new BundleAnalyzerPlugin(),
   ],
 });
