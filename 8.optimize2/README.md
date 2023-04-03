@@ -243,6 +243,8 @@ module.exports = {
 
 Hash 是整个项目的 hash 值，其根据每次编译内容计算得到，每次编译之后都会生成新的 hash,即修改任何文件都会导致所有文件的 hash 发生改变
 
+doc/2.js
+
 ```JavaScript
 const path = require("path");
 const glob = require("glob");
@@ -306,4 +308,191 @@ module.exports = {
     }),
   ],
 };
+```
+
+#### 4.3.2 chunkhash
+
+chunkhash 采用 hash 计算的话，每一次构建后生成的哈希值都不一样，即使文件内容压根没有改变。这样子是没办法实现缓存效果，我们需要换另一种哈希值计算方式，即 chunkhash,chunkhash 和 hash 不一样，它根据不同的入口文件(Entry)进行依赖文件解析、构建对应的 chunk，生成对应的哈希值。我们在生产环境里把一些公共库和程序入口文件区分开，单独打包构建，接着我们采用 chunkhash 的方式生成哈希值，那么只要我们不改动公共库的代码，就可以保证其哈希值不会受影响
+
+```JavaScript
+const path = require("path");
+const glob = require("glob");
+const PurgecssPlugin = require("purgecss-webpack-plugin");
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const PATHS = {
+  src: path.join(__dirname, 'src')
+}
+module.exports = {
+  mode: "production",
+  entry: {
+    main: './src/index.js',
+    vender:['lodash']
+  },
+  output:{
+    path:path.resolve(__dirname,'dist'),
++    filename:'[name].[chunkhash].js'
+  },
+  devServer:{
+    hot:false
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js/,
+        include: path.resolve(__dirname, "src"),
+        use: [
+          {
+            loader:'thread-loader',
+            options:{
+              workers:3
+            }
+          },
+          {
+            loader: "babel-loader",
+            options: {
+              presets: ["@babel/preset-env", "@babel/preset-react"],
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        include: path.resolve(__dirname, "src"),
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+          },
+          "css-loader",
+        ],
+      },
+    ],
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
++      filename: "[name].[chunkhash].css"
+    }),
+    new PurgecssPlugin({
+      paths: glob.sync(`${PATHS.src}/**/*`,  { nodir: true }),
+    }),
+  ],
+};
+
+```
+
+#### 4.3.3 contenthash
+
+使用 chunkhash 存在一个问题，就是当在一个 JS 文件中引入 CSS 文件，编译后它们的 hash 是相同的，而且只要 js 文件发生改变 ，关联的 css 文件 hash 也会改变,这个时候可以使用 mini-css-extract-plugin 里的 contenthash 值，保证即使 css 文件所处的模块里就算其他文件内容改变，只要 css 文件内容不变，那么不会重复构建
+
+```JavaScript
+const path = require("path");
+const glob = require("glob");
+const PurgecssPlugin = require("purgecss-webpack-plugin");
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const PATHS = {
+  src: path.join(__dirname, 'src')
+}
+module.exports = {
+  mode: "production",
+  entry: {
+    main: './src/index.js',
+    vender:['lodash']
+  },
+  output:{
+    path:path.resolve(__dirname,'dist'),
+    filename:'[name].[chunkhash].js'
+  },
+  devServer:{
+    hot:false
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js/,
+        include: path.resolve(__dirname, "src"),
+        use: [
+          {
+            loader:'thread-loader',
+            options:{
+              workers:3
+            }
+          },
+          {
+            loader: "babel-loader",
+            options: {
+              presets: ["@babel/preset-env", "@babel/preset-react"],
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        include: path.resolve(__dirname, "src"),
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+          },
+          "css-loader",
+        ],
+      },
+    ],
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
++      filename: "[name].[contenthash].css"
+    }),
+    new PurgecssPlugin({
+      paths: glob.sync(`${PATHS.src}/**/*`,  { nodir: true }),
+    }),
+  ],
+};
+```
+
+#### 4.3.4 hash
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/04/02/20-56-40-1bc15937e48657b3da7897992fdd4621-20230402205638-118cc2.png)
+
+```JavaScript
+function createHash(){
+   return  require('crypto').createHash('md5');
+}
+let entry = {
+    entry1:'entry1',
+    entry2:'entry2'
+}
+let entry1 = 'require depModule1';//模块entry1
+let entry2 = 'require depModule2';//模块entry2
+
+let depModule1 = 'depModule1';//模块depModule1
+let depModule2 = 'depModule2';//模块depModule2
+//如果都使用hash的话，因为这是工程级别的，即每次修改任何一个文件，所有文件名的hash至都将改变。所以一旦修改了任何一个文件，整个项目的文件缓存都将失效
+let hash =  createHash()
+.update(entry1)
+.update(entry2)
+.update(depModule1)
+.update(depModule2)
+.digest('hex');
+console.log('hash',hash)
+//chunkhash根据不同的入口文件(Entry)进行依赖文件解析、构建对应的chunk，生成对应的哈希值。
+//在生产环境里把一些公共库和程序入口文件区分开，单独打包构建，接着我们采用chunkhash的方式生成哈希值，那么只要我们不改动公共库的代码，就可以保证其哈希值不会受影响
+let entry1ChunkHash = createHash()
+.update(entry1)
+.update(depModule1).digest('hex');;
+console.log('entry1ChunkHash',entry1ChunkHash);
+
+let entry2ChunkHash = createHash()
+.update(entry2)
+.update(depModule2).digest('hex');;
+console.log('entry2ChunkHash',entry2ChunkHash);
+
+let entry1File = entry1+depModule1;
+let entry1ContentHash = createHash()
+.update(entry1File).digest('hex');;
+console.log('entry1ContentHash',entry1ContentHash);
+
+let entry2File = entry2+depModule2;
+let entry2ContentHash = createHash()
+.update(entry2File).digest('hex');;
+console.log('entry2ContentHash',entry2ContentHash);
 ```

@@ -62,6 +62,5 @@ module.exports = {
       filename: "css/[name].[contenthash:8].css", // 可以指定输出目录css
     }),
     new OptimizeCssAssetsWebpackPlugin(), // 压缩css
-    // new HashPlugin(), // 修改hash的plugin
   ],
 };

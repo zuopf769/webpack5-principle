@@ -3,6 +3,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+const HashPlugin = require("./plugins/hash-plugin");
 
 // 使用chunkhash存在一个问题，就是当在一个JS文件中引入CSS文件，编译后它们的hash是相同的，
 // 而且只要js文件发生改变 ，关联的css文件hash也会改变,
@@ -62,6 +63,6 @@ module.exports = {
       filename: "css/[name].[contenthash:8].css", // 可以指定输出目录css
     }),
     new OptimizeCssAssetsWebpackPlugin(), // 压缩css
-    // new HashPlugin(), // 修改hash的plugin
+    new HashPlugin(), // 修改hash的plugin
   ],
 };

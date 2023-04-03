@@ -4,24 +4,19 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCssAssetsWebpackPlugin = require("optimize-css-assets-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 
-// 使用chunkhash存在一个问题，就是当在一个JS文件中引入CSS文件，编译后它们的hash是相同的，
-// 而且只要js文件发生改变 ，关联的css文件hash也会改变,
-// 这个时候可以使用mini-css-extract-plugin里的contenthash值，
-// 保证即使css文件所处的模块里就算其他文件内容改变，只要css文件内容不变，那么不会重复构建
+// Hash 是整个项目的hash值，其根据每次编译内容计算得到，
+// 每次编译之后都会生成新的hash,即修改任何文件都会导致所有文件的hash发生改变
 module.exports = {
-  // 如果mode是production,会启用压缩插件, 如果配置为none表示不会启用压缩插件
+  //如果mode是production,会启用压缩插件, 如果配置为none表示不会启用压缩插件
   mode: "development",
   // mode: "none",
   devtool: false,
-  // 多入口
   entry: {
-    // main: "./src/index.js", // 可以是一个字符串，也可以是一个数组
-    main: ["./src/index.js", "./src/index2.js"], // index和index2会打包在一起
-    vendor: ["lodash"], // 单独作为一个chunk单独打出一个bundle；即使main入口有改动，vendor入口的chunkhash也不会改变
+    main: "./src/index.js",
   },
   output: {
     path: path.resolve("build"),
-    filename: "[name].[contenthash:8].js", // 取hash的前8位
+    filename: "[name][hash].js",
     clean: true,
   },
   // 优化
@@ -44,7 +39,7 @@ module.exports = {
         test: /\.(jpg|png|gif|bmp|svg)$/,
         type: "asset/resource",
         generator: {
-          filename: "images/[contenthash:8][ext]",
+          filename: "images/[hash][ext]",
         },
       },
     ],
@@ -59,9 +54,8 @@ module.exports = {
       },
     }),
     new MiniCssExtractPlugin({
-      filename: "css/[name].[contenthash:8].css", // 可以指定输出目录css
+      filename: "css/[name].css", // 可以指定输出目录css
     }),
     new OptimizeCssAssetsWebpackPlugin(), // 压缩css
-    // new HashPlugin(), // 修改hash的plugin
   ],
 };
