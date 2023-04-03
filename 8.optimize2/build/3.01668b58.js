@@ -1,0 +1,2 @@
+/*! For license information please see 3.01668b58.js.LICENSE.txt */
+"use strict";(self.webpackChunk_8_optimize2=self.webpackChunk_8_optimize2||[]).push([[3],{4:(e,t,s)=>{s.r(t),s.d(t,{default:()=>i});const i="three"}}]);

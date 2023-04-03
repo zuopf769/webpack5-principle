@@ -28,6 +28,10 @@ module.exports = {
   optimization: {
     minimize: true, // 启用压缩js
     minimizer: [new TerserPlugin()],
+    // moduleIds: "deterministic", // 生产环境配置；根据模块名称生成简短的hash值
+    moduleIds: "natural", // 自然数；默认；按使用顺序的数字ID；删除某些些文件可能会导致缓存失效
+    // chunkIds: "deterministic",
+    chunkIds: "natural",
   },
   module: {
     rules: [

@@ -48,27 +48,17 @@ contenthash 需要计算结果的内容，计算起来非常的慢
 - 调整一下内容的位置，contenthash 不变这种情况，实际项目里是不是基本不会出现哈？ 9999.99%不会出现
 - 不修改任何文件,多次打包的 hash 是一样的么
 
-123 撤回了一条消息
-123
-数字后面也是 hash
-帅超超
-和 HashedModuleIdsPlugin 有啥关系和区别
+## deterministic
 
-123 撤回了一条消息
-123
 数字后面也是 hash
-帅超超
-DeterministicModuleIdsPlugin.js
-和 HashedModuleIdsPlugin 有啥关系和区别
-123
-没写代码 都 500 多个字节
-shine
-我能把 one 和 three 打一起吗
-一般来说 one two 都是一个天然的代码分割点 splitChunksPlugin
-123
-现在已经是在讲联邦模块了吗
-shine
-你醒醒
-20:12
-123
-这咋搜进 node——modules 里面的
+
+## DeterministicModuleIdsPlugin.js 和 HashedModuleIdsPlugin 有啥关系和区别?
+
+生成 id 的不同策略；不同的策略生成的算法不一样
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/04/03/14-32-18-5b7dad2188c7045dfbeba84f593fa565-20230403143217-60b3b6.png)
+
+## 能把 one 和 three 打一起吗
+
+- 一般来说 one two 都是一个天然的代码分割点 ；遇到 import()就是一个分割点
+- 可以配置 splitChunksPlugin 来决定哪些分割，哪些合并在一起
