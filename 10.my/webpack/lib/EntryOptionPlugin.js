@@ -12,6 +12,7 @@ class EntryOptionPlugin {
       if (typeof entry === "string") {
         itemToPlugin(context, entry, "main").apply(compiler);
       } else {
+        // 把入口的每一项转换成插件
         for (let entryName in entry) {
           itemToPlugin(context, entry[entryName], entryName).apply(compiler);
         }

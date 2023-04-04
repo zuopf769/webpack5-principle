@@ -12,5 +12,8 @@
   "devDependencies": {
     "webpack": "^5.77.0",
     "webpack-cli": "^5.0.1"
+  },
+  "dependencies": {
+    "babylon": "^6.18.0"
   }
 }

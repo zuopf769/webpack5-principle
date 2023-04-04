@@ -14,7 +14,7 @@ class SingleEntryPlugin {
         console.log("SingleEntryPlugin make");
         // 开始编译一个新的入口context 根目录 entry入口文件的相对路径 name main
         // callback最终的回调
-        // compilation.addEntry(context, entry, name, callback);
+        compilation.addEntry(context, entry, name, callback);
       }
     );
   }

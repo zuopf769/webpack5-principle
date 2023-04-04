@@ -1,4 +1,6 @@
 let fs = require("fs");
+
+// 设置node环境下的文件读写系统
 class NodeEnvironmentPlugin {
   constructor(options) {
     this.options = options || {};

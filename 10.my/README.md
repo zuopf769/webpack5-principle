@@ -320,3 +320,115 @@ class NodeEnvironmentPlugin {
 }
 module.exports = NodeEnvironmentPlugin;
 ```
+
+## 3. 监听 make 事件
+
+### 3.1 Compiler.js
+
+```js
++const { Tapable, SyncBailHook, AsyncParallelHook } = require("tapable");
+class Compiler extends Tapable {
+    constructor(context) {
+        super();
+        this.options = {};
+        this.context = context; //设置上下文路径
++       this.hooks = {
++            entryOption: new SyncBailHook(["context", "entry"]),
++            make: new AsyncParallelHook(["compilation"])
++       };
+    }
+    run(callback) {
+        console.log("Compiler run");
+        callback(null, {
+            toJson() {
+                return {
+                    entries: true,
+                    chunks: true,
+                    modules: true,
+                    assets: true
+                }
+            }
+        });
+    }
+}
+module.exports = Compiler;
+```
+
+### 3.2 webpack\index.js
+
+```js
+const NodeEnvironmentPlugin = require("./plugins/NodeEnvironmentPlugin");
++const WebpackOptionsApply = require("./WebpackOptionsApply");
+const Compiler = require("./Compiler");
+function webpack(options) {
+    options.context = options.context || path.resolve(process.cwd());
+    //创建compiler
+    let compiler = new Compiler(options.context);
+    //给compiler指定options
+    compiler.options = Object.assign(compiler.options, options);
+    //插件设置读写文件的API
+    new NodeEnvironmentPlugin().apply(compiler);
+    //调用配置文件里配置的插件并依次调用
+    if (options.plugins && Array.isArray(options.plugins)) {
+        for (const plugin of options.plugins) {
+            plugin.apply(compiler);
+        }
+    }
++    new WebpackOptionsApply().process(options, compiler); //处理参数
+    return compiler;
+}
+
+module.exports = webpack;
+```
+
+### 3.3 WebpackOptionsApply.js
+
+```js
+const EntryOptionPlugin = require("./plugins/EntryOptionPlugin");
+module.exports = class WebpackOptionsApply {
+  process(options, compiler) {
+    //挂载入口文件插件
+    new EntryOptionPlugin().apply(compiler);
+    //触发entryOption事件执行
+    compiler.hooks.entryOption.call(options.context, options.entry);
+  }
+};
+```
+
+### 3.4 EntryOptionPlugin.js
+
+```js
+onst SingleEntryPlugin = require("./SingleEntryPlugin");
+class EntryOptionPlugin {
+    apply(compiler) {
+        compiler.hooks.entryOption.tap("EntryOptionPlugin", (context, entry) => {
+            new SingleEntryPlugin(context, entry, "main").apply(compiler);
+        });
+    }
+}
+
+module.exports = EntryOptionPlugin;
+```
+
+### 3.5 SingleEntryPlugin.js
+
+```js
+class EntryOptionPlugin {
+  constructor(context, entry, name) {
+    this.context = context;
+    this.entry = entry;
+    this.name = name;
+  }
+  apply(compiler) {
+    compiler.hooks.make.tapAsync(
+      "SingleEntryPlugin",
+      (compilation, callback) => {
+        //入口文件 代码块的名称 context上下文绝对路径
+        const { entry, name, context } = this;
+        compilation.addEntry(context, entry, name, callback);
+      }
+    );
+  }
+}
+module.exports = EntryOptionPlugin;
+```
