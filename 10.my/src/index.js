@@ -1,1 +1,2 @@
-console.log("index");
+let title = require("./title");
+console.log(title);

@@ -6,6 +6,7 @@ const {
 } = require("tapable");
 const Compilation = require("./Compilation");
 const NormalModuleFactory = require("./NormalModuleFactory");
+let Stats = require("./Stats");
 
 class Compiler {
   constructor(context) {
@@ -39,18 +40,8 @@ class Compiler {
 
     const onCompiled = (err, compilation) => {
       console.log("onCompiled");
-      // TODO 创建stats对象
-      let stats = {
-        toJson() {
-          return {
-            entries: [], // 显示所有的入口
-            chunks: [], // 显示所有的代码块
-            modules: [], // 显示所有模块
-            assets: [], // 显示所有打包后的资源，也就是文件
-          };
-        },
-      };
-      finalCallback(err, stats);
+      // 创建stats对象
+      finalCallback(err, new Stats(compilation));
     };
 
     // 触发beforeRun钩子，返回Compiler的实例对象

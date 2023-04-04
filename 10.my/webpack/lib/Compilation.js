@@ -2,9 +2,11 @@ const path = require("path");
 let { SyncHook } = require("tapable");
 // normalModuleFactory
 const NormalModuleFactory = require("./NormalModuleFactory");
+// 单例
 const normalModuleFactory = new NormalModuleFactory();
 // parser
 const Parser = require("./Parser");
+// 单例
 const parser = new Parser();
 
 class Compilation {

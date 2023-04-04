@@ -1,3 +1,7 @@
+const path = require("path");
+const types = require("babel-types");
+const generate = require("babel-generator").default;
+const traverse = require("babel-traverse").default;
 class NormalModule {
   constructor({ name, context, rawRequest, resource, parser }) {
     this.name = name;
@@ -31,7 +35,36 @@ class NormalModule {
     this.doBuild(compilation, () => {
       // 得到语法树
       this._ast = this.parser.parse(this._source);
-      callback();
+      // 遍历语法树,找到里面的依赖进行收集依赖
+      traverse(this._ast, {
+        // 当遍历到CallExpression节点的时候,就会进入回调
+        CallExpression: (nodePath) => {
+          let node = nodePath.node; //获取节点
+          // 如果方法名是require方法的话
+          if (node.callee.name === "require") {
+            let moduleName = node.arguments[0].value; //1.模块的名称
+            // 2.获得可能的扩展名
+            let extName =
+              moduleName.split(path.posix.sep).pop().indexOf(".") == -1
+                ? ".js"
+                : "";
+            // 3.获取依赖模块(./src/title.js)的绝对路径 win \ linux /
+            // path.posix永远使用linux /，统一使用linux /
+            // path.posix.dirname(this.resource)获取 C:\aproject\xxxx\8.my\src\index.js所在的目录即C:\aproject\xxxx\8.my\src
+            // 依赖的绝对路径 C:\aproject\xxx\8.my\src\title.js
+            let depResource = path.posix.join(
+              path.posix.dirname(this.resource),
+              moduleName + extName
+            );
+            // 4.依赖的模块ID ./+从根目录出发到依赖模块的绝对路径的相对路径
+            let depModuleId =
+              "./" + path.posix.relative(this.context, depResource);
+
+            console.log("depModuleId", depModuleId);
+          }
+        },
+      });
+      // callback();
     });
   }
 
@@ -58,3 +91,14 @@ class NormalModule {
 }
 
 module.exports = NormalModule;
+
+/**
+ * 非常的重要的问题
+ * 模块的ID的问题
+ * 不管你是相对的本地模 块,还是三方模块
+ * 最后它的moduleId 全部都一个相对相对于项目根目录打对路径
+ * ./src/title.js
+ * ./src/index.js
+ * ./node_modules/util/util.js
+ * 路径分隔符一定是linux /,而非window里的\
+ */
