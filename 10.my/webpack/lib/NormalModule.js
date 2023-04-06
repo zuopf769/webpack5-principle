@@ -3,7 +3,7 @@ const types = require("babel-types");
 const generate = require("babel-generator").default;
 const traverse = require("babel-traverse").default;
 class NormalModule {
-  constructor({ name, context, rawRequest, resource, parser }) {
+  constructor({ name, context, rawRequest, resource, parser, moduleId }) {
     this.name = name;
     this.context = context; // C:\aproject\xxxx\8.my
     this.rawRequest = rawRequest; // src\index.js
@@ -11,10 +11,14 @@ class NormalModule {
     this.resource = resource; // 这是这个模块的绝对路径
     // 这是AST解析器,可以把源代码转成AST抽象语法树
     this.parser = parser;
+    // 模块id 模块id是相对于当前上下文的相对路径 './src/index.js'
+    this.moduleId = moduleId || "./" + path.posix.relative(context, resource);
     // 此模块对应的源代码
     this._source;
     // 此模块对应的AST抽象语法树
     this._ast;
+    // 当前模块依赖的模块信息
+    this.dependencies = [];
   }
 
   /**
@@ -42,11 +46,13 @@ class NormalModule {
           let node = nodePath.node; //获取节点
           // 如果方法名是require方法的话
           if (node.callee.name === "require") {
+            // 1 把方法名require改成了__webpack_require__
+            node.callee.name = "__webpack_require__";
             let moduleName = node.arguments[0].value; //1.模块的名称
             // 2.获得可能的扩展名
             let extName =
               moduleName.split(path.posix.sep).pop().indexOf(".") == -1
-                ? ".js"
+                ? ".js" // 目前值考虑js后缀
                 : "";
             // 3.获取依赖模块(./src/title.js)的绝对路径 win \ linux /
             // path.posix永远使用linux /，统一使用linux /
@@ -60,11 +66,23 @@ class NormalModule {
             let depModuleId =
               "./" + path.posix.relative(this.context, depResource);
 
+            // 把require模块路径从./title.js变成了./src/title.js，保证moduleId正确能引用到模块
+            node.arguments = [types.stringLiteral(depModuleId)];
             console.log("depModuleId", depModuleId);
+
+            this.dependencies.push({
+              name: this.name, //main
+              context: this.context, //根目录
+              rawRequest: moduleName, //模块的相对路径 原始路径
+              moduleId: depModuleId, //模块ID 它是一个相对于根目录的相对路径,以./开头
+              resource: depResource, //依赖模块的绝对路径
+            });
           }
         },
       });
-      // callback();
+      //把转换后的语法树重新生成源代码
+      let { code } = generate(this._ast);
+      callback();
     });
   }
 
@@ -76,6 +94,7 @@ class NormalModule {
   doBuild(compilation, callback) {
     // source读到的源代码
     this.getSource(compilation, (err, source) => {
+      // TODO 我们的loader逻辑应该放到这个地方
       this._source = source;
       callback(err);
     });
