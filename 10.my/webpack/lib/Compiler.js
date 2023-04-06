@@ -65,7 +65,13 @@ class Compiler {
       // 触发make钩子的回调函数执行
       // make钩子时在lib/SingleEntryPlugin.js文件中注册的
       this.hooks.make.callAsync(compilation, (err) => {
-        onCompiled(err, compilation);
+        // 封装代码块之后编译就完成了
+        compilation.seal((err) => {
+          // 触发编译完成的钩子
+          this.hooks.afterCompile.callAsync(compilation, (err) => {
+            onCompiled(err, compilation);
+          });
+        });
       });
     });
   }

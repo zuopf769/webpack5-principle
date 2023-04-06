@@ -4,7 +4,7 @@ const generate = require("babel-generator").default;
 const traverse = require("babel-traverse").default;
 class NormalModule {
   constructor({ name, context, rawRequest, resource, parser, moduleId }) {
-    this.name = name;
+    this.name = name; // 模块的名称其实是所属的chunk的名字，属于同一个chunk的模块名称都一样
     this.context = context; // C:\aproject\xxxx\8.my
     this.rawRequest = rawRequest; // src\index.js
     // C:\aproject\xxxx\8.my\src\index.js

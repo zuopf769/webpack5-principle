@@ -1,6 +1,7 @@
 const path = require("path");
 let { SyncHook } = require("tapable");
 let async = require("neo-async");
+const Chunk = require("./Chunk");
 // normalModuleFactory
 const NormalModuleFactory = require("./NormalModuleFactory");
 // 单例
@@ -20,10 +21,14 @@ class Compilation {
     this.entries = []; // 入口模块的数组,这里放着所有的入口模块
     this.modules = []; // 模块的数组,这里放着所有的模块
     this._modules = {}; // key是模块ID ,值是模块对象
+    this.chunks = []; //这里放着所有代码块
 
     this.hooks = {
       //当你成功构建完成一个模块后就会触发此钩子执行
       succeedModule: new SyncHook(["module"]),
+      seal: new SyncHook(),
+      beforeChunks: new SyncHook(),
+      afterChunks: new SyncHook(),
     };
   }
 
@@ -126,6 +131,27 @@ class Compilation {
       // 走到这里意味着一个module模块已经编译完成了
       afterBuild(err, module);
     });
+  }
+
+  /**
+   * 把模块封装成代码块Chunk
+   * @param {*} callback
+   */
+  seal(callback) {
+    this.hooks.seal.call(); // seal封装chunk开始
+    this.hooks.beforeChunks.call(); // 开始准备生成代码块
+
+    // 一般来说,默认情况下,每一个入口会生成一个代码块
+    for (const entryModule of this.entries) {
+      const chunk = new Chunk(entryModule); //根据入口模块得到一个代码块
+      this.chunks.push(chunk);
+      // 对所有模块进行过滤,找出来那些名称跟这个chunk一样的模块,组成一个数组赋给chunk.modules
+      chunk.modules = this.modules.filter(
+        (module) => module.name === chunk.name
+      );
+    }
+    this.hooks.afterChunks.call(this.chunks);
+    callback();
   }
 }
 

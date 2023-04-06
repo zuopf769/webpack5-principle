@@ -432,3 +432,568 @@ class EntryOptionPlugin {
 }
 module.exports = EntryOptionPlugin;
 ```
+
+## 4. make 编译
+
+### 4.1 Compiler.js
+
+```js
++const { Tapable, SyncHook, SyncBailHook, AsyncParallelHook, AsyncSeriesHook } = require("tapable");
++const Compilation = require('./Compilation');
++const NormalModuleFactory = require('./NormalModuleFactory');
++const Stats = require('./Stats');
+class Compiler extends Tapable {
+    constructor(context) {
+        super();
+        this.options = {};
+        this.context = context; //设置上下文路径
+        this.hooks = {
+            entryOption: new SyncBailHook(["context", "entry"]),
++            beforeRun: new AsyncSeriesHook(["compiler"]),
++            run: new AsyncSeriesHook(["compiler"]),
++            beforeCompile: new AsyncSeriesHook(["params"]),
++            compile: new SyncHook(["params"]),
++            make: new AsyncParallelHook(["compilation"]),
++            thisCompilation: new SyncHook(["compilation", "params"]),
++            compilation: new SyncHook(["compilation", "params"]),
++            done: new AsyncSeriesHook(["stats"])
+        };
+    }
++    run(finalCallback) {
++        //编译完成后的回调
++        const onCompiled = (err, compilation) => {
++            console.log('onCompiled');
++            finalCallback(err, new Stats(compilation));
++        };
++        //准备运行编译
++        this.hooks.beforeRun.callAsync(this, err => {
++            //运行
++            this.hooks.run.callAsync(this, err => {
++                this.compile(onCompiled); //开始编译,编译完成后执行conCompiled回调
++            });
++        });
++    }
++    compile(onCompiled) {
++        const params = this.newCompilationParams();
++        this.hooks.beforeCompile.callAsync(params, err => {
++            this.hooks.compile.call(params);
++            const compilation = this.newCompilation(params);
++            this.hooks.make.callAsync(compilation, err => {
++                console.log('make完成');
++                onCompiled(err, compilation);
++            });
++        });
++    }
++    newCompilationParams() {
++        const params = {
++            normalModuleFactory: new NormalModuleFactory()
++        };
++        return params;
++    }
++    newCompilation(params) {
++        const compilation = new Compilation(this);
++        this.hooks.thisCompilation.call(compilation, params);
++        this.hooks.compilation.call(compilation, params);
++        return compilation;
++    }
+}
+module.exports = Compiler;
+```
+
+### 4.2 Compilation.js
+
+```js
+const NormalModuleFactory = require("./NormalModuleFactory");
+const { Tapable, SyncHook } = require("tapable");
+const Parser = require("./Parser");
+const parser = new Parser();
+const path = require("path");
+class Compilation extends Tapable {
+  constructor(compiler) {
+    super();
+    this.compiler = compiler;
+    this.options = compiler.options;
+    this.context = compiler.context;
+    this.inputFileSystem = compiler.inputFileSystem;
+    this.outputFileSystem = compiler.outputFileSystem;
+    this.entries = [];
+    this.modules = [];
+    this.hooks = {
+      succeedModule: new SyncHook(["module"]),
+    };
+  }
+  //context ./src/index.js main callback(终级回调)
+  addEntry(context, entry, name, callback) {
+    this._addModuleChain(context, entry, name, (err, module) => {
+      callback(err, module);
+    });
+  }
+  _addModuleChain(context, entry, name, callback) {
+    const moduleFactory = new NormalModuleFactory();
+    let module = moduleFactory.create({
+      name, //模块所属的代码块的名称
+      context: this.context, //上下文
+      rawRequest: entry,
+      resource: path.posix.join(context, entry),
+      parser,
+    }); //模块完整路径
+
+    this.modules.push(module);
+    this.entries.push(module); //把编译好的模块添加到入口列表里面
+    const afterBuild = () => {
+      if (module.dependencies) {
+        this.processModuleDependencies(module, (err) => {
+          callback(null, module);
+        });
+      } else {
+        return callback(null, module);
+      }
+    };
+    this.buildModule(module, afterBuild);
+  }
+  buildModule(module, afterBuild) {
+    module.build(this, (err) => {
+      this.hooks.succeedModule.call(module);
+      return afterBuild();
+    });
+  }
+}
+module.exports = Compilation;
+```
+
+### 4.3 NormalModuleFactory.js
+
+```js
+const NormalModule = require("./NormalModule");
+class NormalModuleFactory {
+  create(data) {
+    return new NormalModule(data);
+  }
+}
+module.exports = NormalModuleFactory;
+```
+
+### 4.4 NormalModule.js
+
+```js
+class NormalModule {
+  constructor({ name, context, rawRequest, resource, parser }) {
+    this.name = name;
+    this.context = context;
+    this.rawRequest = rawRequest;
+    this.resource = resource;
+    this.parser = parser;
+    this._source = null;
+    this._ast = null;
+  }
+  //解析依赖
+  build(compilation, callback) {
+    this.doBuild(compilation, (err) => {
+      this._ast = this.parser.parse(this._source);
+      callback();
+    });
+  }
+  //获取模块代码
+  doBuild(compilation, callback) {
+    let originalSource = this.getSource(this.resource, compilation);
+    this._source = originalSource;
+    callback();
+  }
+  getSource(resource, compilation) {
+    let originalSource = compilation.inputFileSystem.readFileSync(
+      resource,
+      "utf8"
+    );
+    return originalSource;
+  }
+}
+module.exports = NormalModule;
+```
+
+### 4.5 Parser.js
+
+```js
+const babylon = require("babylon");
+const { Tapable } = require("tapable");
+class Parser extends Tapable {
+  constructor() {
+    super();
+  }
+  parse(source) {
+    return babylon.parse(source, {
+      sourceType: "module",
+      plugins: ["dynamicImport"],
+    });
+  }
+}
+module.exports = Parser;
+```
+
+### 4.6 Stats.js
+
+```js
+class Stats {
+  constructor(compilation) {
+    this.entries = compilation.entries;
+    this.modules = compilation.modules;
+  }
+  toJson() {
+    return this;
+  }
+}
+module.exports = Stats;
+```
+
+## 5. 编译模块和依赖
+
+### 5.1 webpack\Compilation.js
+
+```js
+const NormalModuleFactory = require('./NormalModuleFactory');
++const async = require('neo-async');
+const { Tapable, SyncHook } = require("tapable");
+const Parser = require('./Parser');
+const parser = new Parser();
+const path = require('path');
+class Compilation extends Tapable {
+    constructor(compiler) {
+        super();
+        this.compiler = compiler;
+        this.options = compiler.options;
+        this.context = compiler.context;
+        this.inputFileSystem = compiler.inputFileSystem;
+        this.outputFileSystem = compiler.outputFileSystem;
+        this.entries = [];
+        this.modules = [];
+        this.hooks = {
+            succeedModule: new SyncHook(["module"])
+        }
+    }
+    //context ./src/index.js main callback(终级回调)
++    _addModuleChain(context,entry,name,callback){
++        this.createModule({
++            name,//所属的代码块的名称 main
++            context:this.context,//上下文
++            rawRequest:entry,// ./src/index.js
++            resource:path.posix.join(context,entry),//此模块entry的的绝对路径
++            parser,
++        },module=>{this.entries.push(module)},callback);
++    }
++    createModule(data,addEntry,callback){
++        //先创建模块工厂
++        const moduleFactory = new NormalModuleFactory();
++        let module = moduleFactory.create(data);
++        //非常非常重要 模块的ID如何生成? 模块的ID是一个相对于根目录的相对路径
++        //index.js ./src/index.js title.js ./src/title.js
++        //relative返回一个相对路径 从根目录出出到模块的绝地路径 得到一个相对路径
++        module.moduleId = '.'+path.posix.sep+path.posix.relative(this.context,module.resource);
++        addEntry&&addEntry(module);
++        this.modules.push(module);//把模块添加到完整的模块数组中
++        const afterBuild = (err,module)=>{
++            if(module.dependencies){//如果一个模块编译完成,发现它有依赖的模块,那么递归编译它的依赖模块
++                this.processModuleDependencies(module,(err)=>{
++                    //当这个入口模块和它依赖的模块都编译完成了,才会让调用入口模块的回调
++                    callback(err,module);
++                });
++            }else{
++                callback(err,module);
++            }
++        }
++        this.buildModule(module,afterBuild);
++    }
++    processModuleDependencies(module,callback){
++        let dependencies= module.dependencies;
++        //因为我希望可以并行的同时开始编译依赖的模块,然后等所有依赖的模块全部编译完成后才结束
++        async.forEach(dependencies,(dependency,done)=>{
++            let {name,context,rawRequest,resource,moduleId} = dependency;
++            this.createModule({
++                name,
++                context,
++                rawRequest,
++                resource,
++                moduleId,
++                parser
++            },null,done);
++        },callback);
++    }
+    buildModule(module,afterBuild){
+        module.build(this,(err)=>{
+            this.hooks.succeedModule.call(module)
+            afterBuild(null,module);
+        });
+    }
+}
+module.exports = Compilation;
+```
+
+### 5.2 NormalModule.js
+
+webpack\NormalModule.js
+
+```js
++const path = require('path');
++const types = require('babel-types');
++const generate = require('babel-generator').default;
++const traverse = require('babel-traverse').default;
+class NormalModule {
++    constructor({ name, context, rawRequest, resource, parser, moduleId }) {
+        this.name = name;
+        this.context = context;
+        this.rawRequest = rawRequest;
+        this.resource = resource;
++        this.moduleId = moduleId||('./'+path.posix.relative(context,resource));
+        this.parser = parser;
+        this._source = null;
+        this._ast = null;
++        this.dependencies = [];
+    }
+    //解析依赖
+    build(compilation, callback) {
+        this.doBuild(compilation, err => {
++            let originalSource = this.getSource(this.resource, compilation);
++            // 将 当前模块 的内容转换成 AST
++            const ast = this.parser.parse(originalSource);
++            traverse(ast, {
++                // 如果当前节点是一个函数调用时
++                CallExpression: (nodePath) => {
++                    let node = nodePath.node;
++                    // 当前节点是 require 时
++                    if (node.callee.name === 'require') {
++                        //修改require为__webpack_require__
++                        node.callee.name = '__webpack_require__';
++                        //获取要加载的模块ID
++                        let moduleName = node.arguments[0].value;
++                        //获取扩展名
++                        let extension = moduleName.split(path.posix.sep).pop().indexOf('.') == -1 ? '.js' : '';
++                        //获取依赖模块的绝对路径
++                        let dependencyResource = path.posix.join(path.posix.dirname(this.resource), moduleName + extension);
++                        //获取依赖模块的模块ID
++                        let dependencyModuleId = '.' + path.posix.sep + path.posix.relative(this.context, dependencyResource);
++                        //添加依赖
++                        this.dependencies.push({
++                            name: this.name, context: this.context, rawRequest: moduleName,
++                            moduleId: dependencyModuleId, resource: dependencyResource
++                        });
++                        node.arguments = [types.stringLiteral(dependencyModuleId)];
++                    }
++                }
++            });
++            let { code } = generate(ast);
++            this._source = code;
++            this._ast = ast;
+            callback();
+        });
+    }
+    //获取模块代码
+    doBuild(compilation, callback) {
+        let originalSource = this.getSource(this.resource, compilation);
+        this._source = originalSource;
+        callback();
+    }
+    getSource(resource, compilation) {
+        let originalSource = compilation.inputFileSystem.readFileSync(resource, 'utf8');
+        return originalSource;
+    }
+}
+module.exports = NormalModule;
+```
+
+## 6. seal
+
+### 6.1 Compiler.js
+
+```js
+const { Tapable, SyncHook, SyncBailHook, AsyncParallelHook, AsyncSeriesHook } = require("tapable");
+const Compilation = require('./Compilation');
+const NormalModuleFactory = require('./NormalModuleFactory');
+const Stats = require('./Stats');
+class Compiler extends Tapable {
+    constructor(context) {
+        super();
+        this.options = {};
+        this.context = context; //设置上下文路径
+        this.hooks = {
+            entryOption: new SyncBailHook(["context", "entry"]),
+            beforeRun: new AsyncSeriesHook(["compiler"]),
+            run: new AsyncSeriesHook(["compiler"]),
+            beforeCompile: new AsyncSeriesHook(["params"]),
+            compile: new SyncHook(["params"]),
+            make: new AsyncParallelHook(["compilation"]),
+            thisCompilation: new SyncHook(["compilation", "params"]),
+            compilation: new SyncHook(["compilation", "params"]),
++           afterCompile:new AsyncSeriesHook(["compilation"]),
+            done: new AsyncSeriesHook(["stats"])
+        };
+    }
+    run(finalCallback) {
+        //编译完成后的回调
+        const onCompiled = (err, compilation) => {
+            console.log('onCompiled');
+            finalCallback(err, new Stats(compilation));
+        };
+        //准备运行编译
+        this.hooks.beforeRun.callAsync(this, err => {
+            //运行
+            this.hooks.run.callAsync(this, err => {
+                this.compile(onCompiled); //开始编译,编译完成后执行conCompiled回调
+            });
+        });
+    }
+    compile(onCompiled) {
+        const params = this.newCompilationParams();
+        this.hooks.beforeCompile.callAsync(params, err => {
+            this.hooks.compile.call(params);
+            const compilation = this.newCompilation(params);
+            this.hooks.make.callAsync(compilation, err => {
++                compilation.seal(err => {
++                    this.hooks.afterCompile.callAsync(compilation, err => {
++                        return onCompiled(null, compilation);
++                    });
++                });
+            });
+        });
+    }
+    newCompilationParams() {
+        const params = {
+            normalModuleFactory: new NormalModuleFactory()
+        };
+        return params;
+    }
+    newCompilation(params) {
+        const compilation = new Compilation(this);
+        this.hooks.thisCompilation.call(compilation, params);
+        this.hooks.compilation.call(compilation, params);
+        return compilation;
+    }
+
+}
+module.exports = Compiler;
+```
+
+### 6.2 Compilation.js
+
+```js
+const NormalModuleFactory = require('./NormalModuleFactory');
+const async = require('neo-async');
+const { Tapable, SyncHook } = require("tapable");
+const Parser = require('./Parser');
+const parser = new Parser();
+const path = require('path');
++let Chunk = require('./Chunk');
+class Compilation extends Tapable {
+    constructor(compiler) {
+        super();
+        this.compiler = compiler;
+        this.options = compiler.options;
+        this.context = compiler.context;
+        this.inputFileSystem = compiler.inputFileSystem;
+        this.outputFileSystem = compiler.outputFileSystem;
+        this.entries = [];
+        this.modules = [];
+        this.chunks = [];
+        this.hooks = {
+            succeedModule: new SyncHook(["module"]),
++            seal: new SyncHook([]),
++            beforeChunks: new SyncHook([]),
++            afterChunks: new SyncHook(["chunks"])
+        }
+    }
++    seal(callback) {
++        this.hooks.seal.call();
++        this.hooks.beforeChunks.call();//生成代码块之前
++        for (const module of this.entries) {//循环入口模块
++            const chunk = new Chunk(module);//创建代码块
++            this.chunks.push(chunk);//把代码块添加到代码块数组中
++            //把代码块的模块添加到代码块中
++            chunk.modules = this.modules.filter(module => module.name == chunk.name);
++        }
++        this.hooks.afterChunks.call(this.chunks);//生成代码块之后
++        callback();//封装结束
++    }
+    //context ./src/index.js main callback(终级回调)
+    _addModuleChain(context,entry,name,callback){
+        this.createModule({
+            name,//所属的代码块的名称 main
+            context:this.context,//上下文
+            rawRequest:entry,// ./src/index.js
+            resource:path.posix.join(context,entry),//此模块entry的的绝对路径
+            parser,
+        },module=>{this.entries.push(module)},callback);
+    }
+    createModule(data,addEntry,callback){
+        //先创建模块工厂
+        const moduleFactory = new NormalModuleFactory();
+        let module = moduleFactory.create(data);
+        //非常非常重要 模块的ID如何生成? 模块的ID是一个相对于根目录的相对路径
+        //index.js ./src/index.js title.js ./src/title.js
+        //relative返回一个相对路径 从根目录出出到模块的绝地路径 得到一个相对路径
+        module.moduleId = '.'+path.posix.sep+path.posix.relative(this.context,module.resource);
+        addEntry&&addEntry(module);
+        this.modules.push(module);//把模块添加到完整的模块数组中
+        const afterBuild = (err,module)=>{
+            if(module.dependencies){//如果一个模块编译完成,发现它有依赖的模块,那么递归编译它的依赖模块
+                this.processModuleDependencies(module,(err)=>{
+                    //当这个入口模块和它依赖的模块都编译完成了,才会让调用入口模块的回调
+                    callback(err,module);
+                });
+            }else{
+                callback(err,module);
+            }
+        }
+        this.buildModule(module,afterBuild);
+    }
+    processModuleDependencies(module,callback){
+        let dependencies= module.dependencies;
+        //因为我希望可以并行的同时开始编译依赖的模块,然后等所有依赖的模块全部编译完成后才结束
+        async.forEach(dependencies,(dependency,done)=>{
+            let {name,context,rawRequest,resource,moduleId} = dependency;
+            this.createModule({
+                name,
+                context,
+                rawRequest,
+                resource,
+                moduleId,
+                parser
+            },null,done);
+        },callback);
+    }
+    buildModule(module,afterBuild){
+        module.build(this,(err)=>{
+            this.hooks.succeedModule.call(module)
+            afterBuild(null,module);
+        });
+    }
+}
+module.exports = Compilation;
+```
+
+### 6.3 webpack\Chunk.js
+
+```js
+class Chunk {
+  constructor(module) {
+    this.entryModule = module;
+    this.name = module.name;
+    this.files = [];
+    this.modules = [];
+  }
+}
+
+module.exports = Chunk;
+```
+
+### 6.4 Stats.js
+
+```js
+class Stats {
+    constructor(compilation) {
+        this.entries = compilation.entries;
+        this.modules = compilation.modules;
++        this.chunks = compilation.chunks;
+    }
+    toJson() {
+        return this;
+    }
+}
+module.exports = Stats;
+```
