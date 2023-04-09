@@ -7,6 +7,8 @@ const {
 const Compilation = require("./Compilation");
 const NormalModuleFactory = require("./NormalModuleFactory");
 let Stats = require("./Stats");
+const mkdirp = require("mkdirp"); //递归的创建新的文件夹
+const path = require("path");
 
 class Compiler {
   constructor(context) {
@@ -28,6 +30,28 @@ class Compiler {
       done: new AsyncSeriesHook(["stats"]), //所有的编译全部都完成
     };
   }
+  // 发射资源，写文件到硬盘
+  emitAssets(compilation, callback) {
+    //把 chunk变成文件,写入硬盘
+    const emitFiles = (err) => {
+      const assets = compilation.assets;
+      let outputPath = this.options.output.path; //dist
+      for (let file in assets) {
+        let source = assets[file];
+        // 是输出文件的绝对路径 C:\aproject\xxxx\10.my\dist\main.js
+        let targetPath = path.posix.join(outputPath, file);
+        // 写文件
+        this.outputFileSystem.writeFileSync(targetPath, source, "utf8");
+      }
+      callback();
+    };
+
+    //先触发emit的回调,在写插件的时候emit用的很多,因为它是我们修改输出内容的最后机会
+    this.hooks.emit.callAsync(compilation, () => {
+      //先创建输出目录dist,再写入文件
+      mkdirp(this.options.output.path, emitFiles);
+    });
+  }
 
   // run方法是开始编译的入口
   run(callback) {
@@ -41,7 +65,15 @@ class Compiler {
     const onCompiled = (err, compilation) => {
       console.log("onCompiled");
       // 创建stats对象
-      finalCallback(err, new Stats(compilation));
+      // finalCallback(err, new Stats(compilation));
+      this.emitAssets(compilation, (err) => {
+        //先收集编译信息 chunks entries modules files
+        let stats = new Stats(compilation);
+        // 再触发done这个钩子执行
+        this.hooks.done.callAsync(stats, (err) => {
+          callback(err, stats);
+        });
+      });
     };
 
     // 触发beforeRun钩子，返回Compiler的实例对象

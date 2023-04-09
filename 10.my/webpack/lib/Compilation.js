@@ -10,6 +10,14 @@ const normalModuleFactory = new NormalModuleFactory();
 const Parser = require("./Parser");
 // 单例
 const parser = new Parser();
+const ejs = require("ejs");
+const fs = require("fs");
+const mainTemplate = fs.readFileSync(
+  path.join(__dirname, "templates", "main.ejs"),
+  "utf8"
+);
+// 模板编译
+const mainRender = ejs.compile(mainTemplate);
 
 class Compilation {
   constructor(compiler) {
@@ -21,7 +29,9 @@ class Compilation {
     this.entries = []; // 入口模块的数组,这里放着所有的入口模块
     this.modules = []; // 模块的数组,这里放着所有的模块
     this._modules = {}; // key是模块ID ,值是模块对象
-    this.chunks = []; //这里放着所有代码块
+    this.chunks = []; // 这里放着所有代码块
+    this.files = []; // 这里放着本次编译所有的产出的文件名
+    this.assets = {}; //存放 着生成资源 key是文件名 值是文件的内容
 
     this.hooks = {
       //当你成功构建完成一个模块后就会触发此钩子执行
@@ -151,7 +161,27 @@ class Compilation {
       );
     }
     this.hooks.afterChunks.call(this.chunks);
+    //生成代码块之后,要生成代码块对应资源
+    this.createChunkAssets();
     callback();
+  }
+
+  createChunkAssets() {
+    for (let i = 0; i < this.chunks.length; i++) {
+      const chunk = this.chunks[i];
+      const file = chunk.name + ".js"; //只是拿到了文件名
+      chunk.files.push(file);
+      let source = mainRender({
+        entryModuleId: chunk.entryModule.moduleId, // ./src/index.js
+        modules: chunk.modules, //此代码块对应的模块数组[{moduleId:'./src/index.js'},{moduleId:'./src/title.js'}]
+      });
+      this.emitAssets(file, source);
+    }
+  }
+
+  emitAssets(file, source) {
+    this.assets[file] = source;
+    this.files.push(file);
   }
 }
 
