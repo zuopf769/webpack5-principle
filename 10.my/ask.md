@@ -31,3 +31,7 @@ loader 只是中间小的一个环节
 
 - 发射
 - 把打包好的 chunk 生成文件写到硬盘中
+
+### import 动态导入
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/04/10/17-50-08-90e9ef4053bd32f0c835bdc06c4a38f3-20230410175006-073949.png)

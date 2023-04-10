@@ -1,9 +1,18 @@
 const path = require("path");
+let async = require("neo-async");
 const types = require("babel-types");
 const generate = require("babel-generator").default;
 const traverse = require("babel-traverse").default;
 class NormalModule {
-  constructor({ name, context, rawRequest, resource, parser, moduleId }) {
+  constructor({
+    name,
+    context,
+    rawRequest,
+    resource,
+    parser,
+    moduleId,
+    async,
+  }) {
     this.name = name; // 模块的名称其实是所属的chunk的名字，属于同一个chunk的模块名称都一样
     this.context = context; // C:\aproject\xxxx\8.my
     this.rawRequest = rawRequest; // src\index.js
@@ -19,6 +28,10 @@ class NormalModule {
     this._ast;
     // 当前模块依赖的模块信息
     this.dependencies = [];
+    // 当前模块依赖哪些异步模块 import(那些模块)
+    this.blocks = [];
+    // 表示当前的模块是属于一个异步代码块,还是一个同步代码块
+    this.async = async;
   }
 
   /**
@@ -57,7 +70,7 @@ class NormalModule {
             // 3.获取依赖模块(./src/title.js)的绝对路径 win \ linux /
             // path.posix永远使用linux /，统一使用linux /
             // path.posix.dirname(this.resource)获取 C:\aproject\xxxx\8.my\src\index.js所在的目录即C:\aproject\xxxx\8.my\src
-            // 依赖的绝对路径 C:\aproject\xxx\8.my\src\title.js
+            // 依赖的绝对路径 C:\aproject\xxx\10.my\src\title.js
             let depResource = path.posix.join(
               path.posix.dirname(this.resource),
               moduleName + extName
@@ -68,21 +81,71 @@ class NormalModule {
 
             // 把require模块路径从./title.js变成了./src/title.js，保证moduleId正确能引用到模块
             node.arguments = [types.stringLiteral(depModuleId)];
-            console.log("depModuleId", depModuleId);
+            // console.log("depModuleId", depModuleId);
 
             this.dependencies.push({
-              name: this.name, //main
-              context: this.context, //根目录
-              rawRequest: moduleName, //模块的相对路径 原始路径
-              moduleId: depModuleId, //模块ID 它是一个相对于根目录的相对路径,以./开头
-              resource: depResource, //依赖模块的绝对路径
+              name: this.name, // main
+              context: this.context, // 根目录
+              rawRequest: moduleName, // 模块的相对路径 原始路径
+              moduleId: depModuleId, // 模块ID 它是一个相对于根目录的相对路径,以./开头
+              resource: depResource, // 依赖模块的绝对路径
+            });
+            // 判断这个节点CallExpression它的callee是不是import类型
+          } else if (types.isImport(node.callee)) {
+            let moduleName = node.arguments[0].value; //1.模块的名称 ./title.js
+            // 2.获得了可能的扩展名
+            let extName =
+              moduleName.split(path.posix.sep).pop().indexOf(".") == -1
+                ? ".js"
+                : "";
+            // 3.获取依赖的模块的绝对路径
+            let depResource = path.posix.join(
+              path.posix.dirname(this.resource),
+              moduleName + extName
+            );
+            // 4.依赖的模块ID ./+从根目录出发到依赖模块的绝对路径的相对路径 ./src/title.js
+            let depModuleId =
+              "./" + path.posix.relative(this.context, depResource);
+            // webpackChunkName: 'title'
+            let chunkName = "0";
+            if (
+              Array.isArray(node.arguments[0].leadingComments) &&
+              node.arguments[0].leadingComments.length > 0
+            ) {
+              let leadingComments = node.arguments[0].leadingComments[0].value;
+              let regexp = /webpackChunkName:\s*['"]([^'"]+)['"]/;
+              chunkName = leadingComments.match(regexp)[1];
+            }
+            // 替换 import(/* webpackChunkName: "title" */ "./title")
+            nodePath.replaceWithSourceString(
+              `__webpack_require__.e("${chunkName}").then(__webpack_require__.t.bind(null,"${depModuleId}", 7))`
+            );
+            //异步代码块的依赖
+            this.blocks.push({
+              context: this.context,
+              entry: depModuleId,
+              name: chunkName,
+              async: true, //异步的代码块
             });
           }
         },
       });
-      //把转换后的语法树重新生成源代码
+      // 把转换后的语法树重新生成源代码
       let { code } = generate(this._ast);
-      callback();
+      // console.log(code);
+      this._source = code;
+      // 循环构建每一个异步代码块, 都构建完成后才会继续执行callback，继续分析自己依赖的普通模块
+      // 异步模块、普通模块都构建完成才会代表当前的模块编译完成
+      async.forEach(
+        this.blocks,
+        (block, done) => {
+          let { context, entry, name, async } = block;
+          // 某个block编译完后执行done
+          compilation._addModuleChain(context, entry, name, async, done);
+        },
+        callback // 所有的block编译完成后执行callback
+      );
+      // callback();
     });
   }
 

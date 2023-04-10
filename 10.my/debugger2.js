@@ -1,5 +1,5 @@
-// my webpack
-const webpack = require("./webpack");
+// 原生webpack
+const webpack = require("webpack");
 const webpackOptions = require("./webpack.config");
 debugger;
 const compiler = webpack(webpackOptions);

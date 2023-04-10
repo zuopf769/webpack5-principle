@@ -125,38 +125,16 @@
     jsonpArray = jsonpArray.slice();
     for (var i = 0; i < jsonpArray.length; i++) webpackJsonpCallback(jsonpArray[i]);
     var parentJsonpFunction = oldJsonpFunction;
-    return __webpack_require__(__webpack_require__.s = "./src/index.js");
+    return __webpack_require__(__webpack_require__.s = "<%-entryModuleId%>");
   })
     ({
-        
-            "./src/index.js":
+        <%
+        for(let module of modules)
+        {%>
+            "<%-module.moduleId%>":
             (function (module, exports, __webpack_require__) {
-              // 1. 同步require模块
-// let title = require("./title");
-// console.log(title);
-
-// ------------测试异步---------------------
-
-// 先处理底下的两个动态异步模块title和sum，然后再处理自己的同步依赖sync
-
-// --同步模块
-let sync = __webpack_require__("./src/sync.js");
-console.log(sync);
-
-// --异步模块
-
-// 2. 动态import；import()是天然的一个代码分割点；遇到import()就会把import的模块分割出一个代码块；和main代码块区分开
-// import()的模块会成为一个单独的入口，会生成一个单独的代码块
-// 如果import调用了一个模块，那么这个模块和它依赖的模块会合成一个单独的异步模块；里面所以模块的async都是true
-// 魔法注释/* webpackChunkName: "title" */
-__webpack_require__.e("title").then(__webpack_require__.t.bind(null, "./src/title.js", 7)).then(result => console.log(result.default));
-
-__webpack_require__.e("sum").then(__webpack_require__.t.bind(null, "./src/sum.js", 7)).then(result => console.log(result.default));
+              <%-module._source%>
             }),
-        
-            "./src/sync.js":
-            (function (module, exports, __webpack_require__) {
-              module.exports = "sync";
-            }),
-         
+        <%}
+      %> 
     });

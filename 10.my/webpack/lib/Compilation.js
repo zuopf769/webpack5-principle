@@ -12,12 +12,21 @@ const Parser = require("./Parser");
 const parser = new Parser();
 const ejs = require("ejs");
 const fs = require("fs");
+// const mainTemplate = fs.readFileSync(
+//   path.join(__dirname, "templates", "main.ejs"),
+//   "utf8"
+// );
 const mainTemplate = fs.readFileSync(
-  path.join(__dirname, "templates", "main.ejs"),
+  path.join(__dirname, "templates", "asyncMain.ejs"),
   "utf8"
 );
 // 模板编译
 const mainRender = ejs.compile(mainTemplate);
+const chunkTemplate = fs.readFileSync(
+  path.join(__dirname, "templates", "chunk.ejs"),
+  "utf8"
+);
+const chunkRender = ejs.compile(chunkTemplate);
 
 class Compilation {
   constructor(compiler) {
@@ -50,12 +59,12 @@ class Compilation {
    * @param {*} callback 编译完成的回调
    */
   addEntry(context, entry, name, finalCallback) {
-    this._addModuleChain(context, entry, name, (err, module) => {
+    this._addModuleChain(context, entry, name, false, (err, module) => {
       finalCallback(err, module);
     });
   }
 
-  _addModuleChain(context, rawRequest, name, callback) {
+  _addModuleChain(context, rawRequest, name, async, callback) {
     this.createModule(
       {
         name,
@@ -66,6 +75,7 @@ class Compilation {
         moduleId:
           "./" +
           path.posix.relative(context, path.posix.join(context, rawRequest)),
+        async,
       },
       (entryModule) => this.entries.push(entryModule),
       callback
@@ -152,6 +162,7 @@ class Compilation {
     this.hooks.beforeChunks.call(); // 开始准备生成代码块
 
     // 一般来说,默认情况下,每一个入口会生成一个代码块
+    // 入口文件算一个入口；import()动态导入模块也算一个入口
     for (const entryModule of this.entries) {
       const chunk = new Chunk(entryModule); //根据入口模块得到一个代码块
       this.chunks.push(chunk);
@@ -171,10 +182,18 @@ class Compilation {
       const chunk = this.chunks[i];
       const file = chunk.name + ".js"; //只是拿到了文件名
       chunk.files.push(file);
-      let source = mainRender({
-        entryModuleId: chunk.entryModule.moduleId, // ./src/index.js
-        modules: chunk.modules, //此代码块对应的模块数组[{moduleId:'./src/index.js'},{moduleId:'./src/title.js'}]
-      });
+      let source;
+      if (chunk.async) {
+        source = chunkRender({
+          chunkName: chunk.name, // ./src/index.js
+          modules: chunk.modules, //此代码块对应的模块数组[{moduleId:'./src/index.js'},{moduleId:'./src/title.js'}]
+        });
+      } else {
+        source = mainRender({
+          entryModuleId: chunk.entryModule.moduleId, // ./src/index.js
+          modules: chunk.modules, //此代码块对应的模块数组[{moduleId:'./src/index.js'},{moduleId:'./src/title.js'}]
+        });
+      }
       this.emitAssets(file, source);
     }
   }

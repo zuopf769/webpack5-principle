@@ -54,13 +54,9 @@ class Compiler {
   }
 
   // run方法是开始编译的入口
+  // callback 编译完成最终的回调函数
   run(callback) {
     console.log("Compiler run");
-
-    // 编译完成最终的回调函数
-    const finalCallback = (err, stats) => {
-      callback(err, stats);
-    };
 
     const onCompiled = (err, compilation) => {
       console.log("onCompiled");
