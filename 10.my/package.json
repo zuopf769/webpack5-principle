@@ -19,6 +19,7 @@
     "babel-types": "^6.26.0",
     "babylon": "^6.18.0",
     "ejs": "^3.1.9",
+    "isarray": "^2.0.5",
     "mkdirp": "^0.5.3",
     "neo-async": "^2.6.2"
   }

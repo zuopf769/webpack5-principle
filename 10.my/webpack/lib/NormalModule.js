@@ -67,14 +67,32 @@ class NormalModule {
               moduleName.split(path.posix.sep).pop().indexOf(".") == -1
                 ? ".js" // 目前值考虑js后缀
                 : "";
-            // 3.获取依赖模块(./src/title.js)的绝对路径 win \ linux /
-            // path.posix永远使用linux /，统一使用linux /
-            // path.posix.dirname(this.resource)获取 C:\aproject\xxxx\8.my\src\index.js所在的目录即C:\aproject\xxxx\8.my\src
-            // 依赖的绝对路径 C:\aproject\xxx\10.my\src\title.js
-            let depResource = path.posix.join(
-              path.posix.dirname(this.resource),
-              moduleName + extName
-            );
+
+            //依赖的绝对路径
+            let depResource;
+            //如果说模块的名字是以.开头,说明是一个本地模块,或者说用户自定义模块
+            if (moduleName.startsWith(".")) {
+              //2.获得可能的扩展名
+              let extName =
+                moduleName.split(path.posix.sep).pop().indexOf(".") == -1
+                  ? ".js"
+                  : "";
+              // 3.获取依赖模块(./src/title.js)的绝对路径 win \ linux /
+              // path.posix永远使用linux /，统一使用linux /
+              // path.posix.dirname(this.resource)获取 C:\aproject\xxxx\8.my\src\index.js所在的目录即C:\aproject\xxxx\8.my\src
+              // 依赖的绝对路径 C:\aproject\xxx\10.my\src\title.js
+              depResource = path.posix.join(
+                path.posix.dirname(this.resource),
+                moduleName + extName
+              );
+            } else {
+              //否则是一个第三方模块,也就是放在node_modules里的
+              //C:\aproject\xxxx\10.my\node_modules\isarray\index.js
+              depResource = require.resolve(
+                path.posix.join(this.context, "node_modules", moduleName)
+              );
+              depResource = depResource.replace(/\\/g, "/"); //把window里的 \转成 /
+            }
             // 4.依赖的模块ID ./+从根目录出发到依赖模块的绝对路径的相对路径
             let depModuleId =
               "./" + path.posix.relative(this.context, depResource);
@@ -104,8 +122,14 @@ class NormalModule {
               moduleName + extName
             );
             // 4.依赖的模块ID ./+从根目录出发到依赖模块的绝对路径的相对路径 ./src/title.js
-            let depModuleId =
-              "./" + path.posix.relative(this.context, depResource);
+            // let depModuleId =
+            //   "./" + path.posix.relative(this.context, depResource);
+            //4.依赖的模块ID ./+从根目录出发到依赖模块的绝对路径的相对路径
+            //let depModuleId = './'+path.posix.relative(this.context,depResource);
+            //depResource=C:\aproject\xxx\8.my\node_modules\isarray\index.js
+            //this.context C:\aproject\xxxx\8.my\
+            //./node_modules/isarray/index.js
+            let depModuleId = "." + depResource.slice(this.context.length);
             // webpackChunkName: 'title'
             let chunkName = "0";
             if (

@@ -131,7 +131,9 @@
         
             "./src/index.js":
             (function (module, exports, __webpack_require__) {
-              // 1. 同步require模块
+              // ------------测试同步---------------------
+
+// 1. 同步require模块
 // let title = require("./title");
 // console.log(title);
 
@@ -152,11 +154,25 @@ console.log(sync);
 __webpack_require__.e("title").then(__webpack_require__.t.bind(null, "./src/title.js", 7)).then(result => console.log(result.default));
 
 __webpack_require__.e("sum").then(__webpack_require__.t.bind(null, "./src/sum.js", 7)).then(result => console.log(result.default));
+
+// ------------测试第三方模块---------------------
+
+const isarray = __webpack_require__("./node_modules/isarray/index.js");
+console.log(isarray([1, 2, 3]));
             }),
         
             "./src/sync.js":
             (function (module, exports, __webpack_require__) {
               module.exports = "sync";
+            }),
+        
+            "./node_modules/isarray/index.js":
+            (function (module, exports, __webpack_require__) {
+              var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
             }),
          
     });

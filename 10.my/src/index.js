@@ -1,3 +1,5 @@
+// ------------测试同步---------------------
+
 // 1. 同步require模块
 // let title = require("./title");
 // console.log(title);
@@ -23,3 +25,8 @@ import(/* webpackChunkName: "title" */ "./title").then((result) =>
 import(/* webpackChunkName: "sum" */ "./sum").then((result) =>
   console.log(result.default)
 );
+
+// ------------测试第三方模块---------------------
+
+const isarray = require("isarray");
+console.log(isarray([1, 2, 3]));
