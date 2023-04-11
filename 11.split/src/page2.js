@@ -1,5 +1,4 @@
-const title = require("./title");
-const isarray = require("isarray");
-
-console.log(title);
-console.log(isarray([1, 2, 3]));
+let module1 = require("./module1");
+let module2 = require("./module2");
+let $ = require("jquery");
+console.log(module1, module2, $);

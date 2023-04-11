@@ -1,16 +1,27 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/page2.js":
+/***/ "./src/module3.js":
+/*!************************!*\
+  !*** ./src/module3.js ***!
+  \************************/
+/***/ ((module) => {
+
+module.exports = "module3";
+
+
+/***/ }),
+
+/***/ "./src/page3.js":
 /*!**********************!*\
-  !*** ./src/page2.js ***!
+  !*** ./src/page3.js ***!
   \**********************/
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
 let module1 = __webpack_require__(/*! ./module1 */ "./src/module1.js");
-let module2 = __webpack_require__(/*! ./module2 */ "./src/module2.js");
+let module3 = __webpack_require__(/*! ./module3 */ "./src/module3.js");
 let $ = __webpack_require__(/*! jquery */ "./node_modules/jquery/dist/jquery.js");
-console.log(module1, module2, $);
+console.log(module1, module3, $);
 
 
 /***/ })
@@ -90,7 +101,7 @@ console.log(module1, module2, $);
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			"page2": 0
+/******/ 			"page3": 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -140,7 +151,7 @@ console.log(module1, module2, $);
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["vendors-node_modules_jquery_dist_jquery_js","commons-src_module1_js","commons-src_module2_js"], () => (__webpack_require__("./src/page2.js")))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["vendors-node_modules_jquery_dist_jquery_js","commons-src_module1_js"], () => (__webpack_require__("./src/page3.js")))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

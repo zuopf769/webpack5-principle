@@ -211,3 +211,265 @@ module.exports = ImportPlugin;
   - 通过 import()动态引入的代码
   - 通过 splitChunks 拆分出来的代码
 - bundle：bundle 是 webpack 打包之后的各个文件，一般就是和 chunk 是一对一的关系，bundle 就是对 chunk 进行编译压缩打包等处理之后的产出
+
+### 4.4 splitChunks
+
+- [split-chunks-plugin](https://webpack.js.org/plugins/split-chunks-plugin/)
+- 将 [optimization.runtimeChunk](https://webpack.js.org/configuration/optimization/#optimizationruntimechunk) 设置为 true 或 'multiple'，会为每个入口添加一个只含有 runtime 的额外 chunk
+
+![](https://raw.githubusercontent.com/retech-fe/image-hosting/main/img/2023/04/11/16-24-47-d8f39eca8ac3cda2e6978028fca1fa4b-20230411162446-6179e4.png)
+
+#### 4.4.1 工作流程
+
+- SplitChunksPlugin 先尝试把 minChunks 规则的模块抽取到单独的 Chunk 中
+- 判断该 Chunk 是否满足 maxInitialRequests 配置项的要求
+- 判断体积是否满足 minSize 的大小，如果小于 minSize 则不分包，如果大于 minSize 判断是否超过 maxSize,如果大于 maxSize 则继续拆分成更小的包
+
+#### 4.4.2 webpack.config.js
+
+- 请求数是指加载一个 Chunk 时所需要加载的所有的分包数量,包括 Initial Chunk，但不包括 Async Chunk 和 runtimeChunk
+- [maxInitialRequest]() 用于设置 Initial Chunk 最大并行请求数
+- [maxAsyncRequests]() 用于设置 Async Chunk 最大并行请求数
+
+```js
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const AssetPlugin = require("./asset-plugin");
+module.exports = {
+  mode: "development",
+  devtool: false,
+  entry: {
+    page1: "./src/page1.js",
+    page2: "./src/page2.js",
+    page3: "./src/page3.js",
+  },
+  optimization: {
+    splitChunks: {
+      // 表示选择哪些 chunks 进行分割，可选值有：async，initial和all
+      chunks: "all",
+      // 表示新分离出的chunk必须大于等于minSize，默认为30000，约30kb。
+      minSize: 0, //默认值是20000,生成的代码块的最小尺寸
+      // 表示一个模块至少应被minChunks个chunk所包含才能分割。默认为1。
+      minChunks: 1,
+      // 表示按需加载文件时，并行请求的最大数目。默认为5。
+      maxAsyncRequests: 3,
+      // 表示加载入口文件时，并行请求的最大数目。默认为3
+      maxInitialRequests: 5,
+      // 表示拆分出的chunk的名称连接符。默认为~。如chunk~vendors.js
+      automaticNameDelimiter: "~",
+      cacheGroups: {
+        defaultVendors: {
+          test: /[\\/]node_modules[\\/]/, //条件
+          priority: -10, ///优先级，一个chunk很可能满足多个缓存组，会被抽取到优先级高的缓存组中,为了能够让自定义缓存组有更高的优先级(默认0),默认缓存组的priority属性为负值.
+        },
+        default: {
+          minChunks: 2, ////被多少模块共享,在分割之前模块的被引用次数
+          priority: -20,
+        },
+      },
+    },
+    runtimeChunk: true,
+  },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+      chunks: ["page1"],
+      filename: "page1.html",
+    }),
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+      chunks: ["page2"],
+      filename: "page2.html",
+    }),
+    new HtmlWebpackPlugin({
+      template: "./src/index.html",
+      chunks: ["page3"],
+      filename: "page3.html",
+    }),
+    new AssetPlugin(),
+  ],
+};
+```
+
+#### 4.4.3 webpack-assets-plugin.js
+
+```js
+class WebpackAssetsPlugin {
+  constructor(options) {
+    this.options = options;
+  }
+  apply(compiler) {
+    //每当webpack开启一次新的编译 ，就会创建一个新的compilation
+    compiler.hooks.compilation.tap("WebpackAssetsPlugin", (compilation) => {
+      //每次根据chunk创建一个新的文件后会触发一次chunkAsset
+      compilation.hooks.chunkAsset.tap(
+        "WebpackAssetsPlugin",
+        (chunk, filename) => {
+          console.log(chunk.id, filename);
+        }
+      );
+    });
+  }
+}
+module.exports = WebpackAssetsPlugin;
+```
+
+#### 4.4.4 page1.js
+
+```js
+let module1 = require("./module1");
+let module2 = require("./module2");
+let $ = require("jquery");
+console.log(module1, module2, $);
+import(/* webpackChunkName: "asyncModule1" */ "./asyncModule1");
+```
+
+#### 4.4.5 page2.js
+
+```js
+let module1 = require("./module1");
+let module2 = require("./module2");
+let $ = require("jquery");
+console.log(module1, module2, $);
+```
+
+#### 4.4.6 page3.js
+
+```js
+let module1 = require("./module1");
+let module3 = require("./module3");
+let $ = require("jquery");
+console.log(module1, module3, $);
+```
+
+#### 4.4.7 module1.js
+
+```js
+module.exports = "module1";
+```
+
+#### 4.4.8 module2.js
+
+```js
+console.log("module2");
+```
+
+#### 4.4.9 module3.js
+
+```js
+console.log("module3");
+```
+
+#### 4.4.10 asyncModule1.js
+
+```js
+import _ from "lodash";
+console.log(_);
+```
+
+#### 4.4.11 打包后的结果
+
+```js
+//入口代码块
+page1.js
+page2.js
+page3.js
+//异步加载代码块
+src_asyncModule1_js.js
+//defaultVendors缓存组对应的代码块
+defaultVendors-node_modules_jquery_dist_jquery_js.js
+defaultVendors-node_modules_lodash_lodash_js.js
+//default代缓存组对应的代码块
+default-src_module1_js.js
+default-src_module2_js.js
+```
+
+#### 4.4.12 计算过程
+
+```js
+let page1Chunk = {
+  name: "page1",
+  modules: ["A", "B", "C", "lodash"],
+};
+
+let page2Chunk = {
+  name: "page2",
+  module: ["C", "D", "E", "lodash"],
+};
+
+let cacheGroups = {
+  vendor: {
+    test: /lodash/,
+  },
+  default: {
+    minChunks: 2,
+  },
+};
+
+let vendorChunk = {
+  name: `vendor~node_modules_lodash_js`,
+  modules: ["lodash"],
+};
+let defaultChunk = {
+  name: `default~page1~page2`,
+  modules: ["C"],
+};
+```
+
+### 4.5 reuseExistingChunk
+
+[reuseExistingChunk](https://webpack.js.org/plugins/split-chunks-plugin/#splitchunkscachegroupscachegroupreuseexistingchunk) 表示如果当前的代码包含已经被从主 bundle 中分割出去的模块，它将会被重用，而不会生成一个新的代码块
+
+#### 4.5.1 webpack.config.js
+
+```js
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const AssetPlugin = require('./asset-plugin');
+module.exports = {
+    mode: 'development',
+    devtool: false,
++   entry: './src/index.js',
+    optimization: {
+        splitChunks: {
+            // 表示选择哪些 chunks 进行分割，可选值有：async，initial和all
+            chunks: 'all',
+            // 表示新分离出的chunk必须大于等于minSize，默认为30000，约30kb。
+            minSize: 0,//默认值是20000,生成的代码块的最小尺寸
+            // 表示一个模块至少应被minChunks个chunk所包含才能分割。默认为1。
+            minChunks: 1,
+            // 表示按需加载文件时，并行请求的最大数目。默认为5。
+            maxAsyncRequests: 3,
+            // 表示加载入口文件时，并行请求的最大数目。默认为3
+            maxInitialRequests: 5,
+            // 表示拆分出的chunk的名称连接符。默认为~。如chunk~vendors.js
+            automaticNameDelimiter: '~',
++           cacheGroups: {
++               defaultVendors: false,
++               default: false,
++               common: {
++                   minChunks: 1,
++                   reuseExistingChunk: false
++               }
++           }
+        },
++       runtimeChunk: false
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: './src/index.html',
+            filename: 'index.html'
+        })
+        new AssetPlugin()
+    ]
+}
+```
+
+#### 4.5.2 结果
+
+```js
+//reuseExistingChunk: false
+main main.js
+common-src_index_js common-src_index_js.js
+
+//reuseExistingChunk: true
+main main.js
+```
