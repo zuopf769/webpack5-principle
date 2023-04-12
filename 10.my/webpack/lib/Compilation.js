@@ -16,8 +16,12 @@ const fs = require("fs");
 //   path.join(__dirname, "templates", "main.ejs"),
 //   "utf8"
 // );
+// const mainTemplate = fs.readFileSync(
+//   path.join(__dirname, "templates", "asyncMain.ejs"),
+//   "utf8"
+// );
 const mainTemplate = fs.readFileSync(
-  path.join(__dirname, "templates", "asyncMain.ejs"),
+  path.join(__dirname, "templates", "deferMain.ejs"),
   "utf8"
 );
 // 模板编译
@@ -41,6 +45,9 @@ class Compilation {
     this.chunks = []; // 这里放着所有代码块
     this.files = []; // 这里放着本次编译所有的产出的文件名
     this.assets = {}; //存放 着生成资源 key是文件名 值是文件的内容
+    this.vendors = []; //放着所有的第三方模块 isarray
+    this.commons = []; //这里放着同时被多个代码块加载的模块  title.js
+    this.moduleCount = {}; //可以记录每个模块被代码块引用的次数,如果大于等于2,就分离出到commons里
 
     this.hooks = {
       //当你成功构建完成一个模块后就会触发此钩子执行
@@ -92,10 +99,12 @@ class Compilation {
     // 通过模块工厂创建一个模块
     let module = normalModuleFactory.create(data);
     addEntry && addEntry(module); // 如果是入口模块,则添加入口里去
-    //if(!this._modules[module.moduleId]){//如果_modules里有模块了,不要再放了.
+    // 如果这样做的话，会导致模块引用计数失效
+    // if (!this._modules[module.moduleId]) {
+    //如果_modules里有模块了,不要再放了.
     this.modules.push(module); // 给普通模块数组添加一个模块，不管是入口还是依赖模块都需要push
     this._modules[module.moduleId] = module;
-    //}
+    // }
     const afterBuild = (err, module) => {
       // 如果大于0,说明有依赖
       if (module.dependencies.length > 0) {
@@ -161,6 +170,40 @@ class Compilation {
     this.hooks.seal.call(); // seal封装chunk开始
     this.hooks.beforeChunks.call(); // 开始准备生成代码块
 
+    // 循环所有的modules数组
+    for (const module of this.modules) {
+      // 如果模块ID中有node_modules内容,说明是一个第三方模块
+      if (/node_modules/.test(module.moduleId)) {
+        module.name = "vendors";
+        if (!this.vendors.find((item) => item.moduleId === module.moduleId))
+          this.vendors.push(module);
+      } else {
+        // 不是第三方模块就需要统计引用次数
+        let count = this.moduleCount[module.moduleId];
+        if (count) {
+          this.moduleCount[module.moduleId].count++;
+        } else {
+          // 如果没有,则给它赋初始值 {module,count} count是模块的引用次数
+          this.moduleCount[module.moduleId] = { module, count: 1 };
+        }
+      }
+    }
+    for (let moduleId in this.moduleCount) {
+      const { module, count } = this.moduleCount[moduleId];
+      if (count >= 2) {
+        module.name = "commons";
+        this.commons.push(module);
+      }
+    }
+    // 依赖的模块
+    let deferredModuleIds = [...this.vendors, ...this.commons].map(
+      (module) => module.moduleId
+    );
+    // 剩余的模块
+    this.modules = this.modules.filter(
+      (module) => !deferredModuleIds.includes(module.moduleId)
+    );
+
     // 一般来说,默认情况下,每一个入口会生成一个代码块
     // 入口文件算一个入口；import()动态导入模块也算一个入口
     for (const entryModule of this.entries) {
@@ -171,6 +214,23 @@ class Compilation {
         (module) => module.name === chunk.name
       );
     }
+
+    if (this.vendors.length > 0) {
+      const chunk = new Chunk(this.vendors[0]); //根据入口模块得到一个代码块
+      chunk.async = true;
+      this.chunks.push(chunk);
+      //对所有模块进行过滤,找出来那些名称跟这个chunk一样的模块,组成一个数组赋给chunk.modules
+      chunk.modules = this.vendors;
+    }
+
+    if (this.commons.length > 0) {
+      const chunk = new Chunk(this.commons[0]); //根据入口模块得到一个代码块
+      chunk.async = true;
+      this.chunks.push(chunk);
+      //对所有模块进行过滤,找出来那些名称跟这个chunk一样的模块,组成一个数组赋给chunk.modules
+      chunk.modules = this.commons;
+    }
+
     this.hooks.afterChunks.call(this.chunks);
     //生成代码块之后,要生成代码块对应资源
     this.createChunkAssets();
@@ -189,8 +249,12 @@ class Compilation {
           modules: chunk.modules, //此代码块对应的模块数组[{moduleId:'./src/index.js'},{moduleId:'./src/title.js'}]
         });
       } else {
+        let deferredChunks = [];
+        if (this.vendors.length > 0) deferredChunks.push("vendors");
+        if (this.commons.length > 0) deferredChunks.push("commons");
         source = mainRender({
           entryModuleId: chunk.entryModule.moduleId, // ./src/index.js
+          deferredChunks,
           modules: chunk.modules, //此代码块对应的模块数组[{moduleId:'./src/index.js'},{moduleId:'./src/title.js'}]
         });
       }
