@@ -1,16 +1,13 @@
 const path = require("path");
 module.exports = {
-  context: process.cwd(), // 当前的工作目录
+  context: process.cwd(), //当前的工作目录
   mode: "development",
   devtool: false,
-  entry: "./src/index.js",
-  /*
+  // entry: "./src/index.js",
   entry: {
     page1: "./src/page1.js",
     page2: "./src/page2.js",
   },
-  */
-  /*
   optimization: {
     splitChunks: {
       chunks: "all",
@@ -33,22 +30,9 @@ module.exports = {
       },
     },
   },
-  */
   output: {
     path: path.resolve(__dirname, "dist"),
     filename: "main.js",
     chunkFilename: "[name].js", // 动态import的时候，指定生成文件的文件名
-  },
-  // 自定义查找loader模块路径
-  resolveLoader: {
-    modules: ["loaders", "node_modules"], // 先找loaders再找node_modules目录
-  },
-  module: {
-    rules: [
-      {
-        test: /\.less$/,
-        use: ["style-loader", "less-loader"],
-      },
-    ],
   },
 };

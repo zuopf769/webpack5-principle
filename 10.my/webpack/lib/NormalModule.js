@@ -3,6 +3,7 @@ let async = require("neo-async");
 const types = require("babel-types");
 const generate = require("babel-generator").default;
 const traverse = require("babel-traverse").default;
+const { runLoaders } = require("./loader-runner");
 class NormalModule {
   constructor({
     name,
@@ -182,8 +183,35 @@ class NormalModule {
     // source读到的源代码
     this.getSource(compilation, (err, source) => {
       // TODO 我们的loader逻辑应该放到这个地方
-      this._source = source;
-      callback(err);
+      // 在这里把硬盘的内容读出来,读出来之后交给loadRunner进行转换
+      let {
+        module: { rules },
+      } = compilation.options;
+      let loaders = [];
+      for (let i = 0; i < rules.length; i++) {
+        let rule = rules[i];
+        if (rule.test.test(this.resource)) {
+          loaders.push(...rule.use);
+        }
+      }
+      //loader的绝对路径的数组
+      const resolveLoader = (loader) =>
+        require.resolve(path.posix.join(this.context, "loaders", loader));
+      loaders = loaders.map(resolveLoader);
+
+      runLoaders(
+        {
+          resource: this.resource,
+          loaders,
+        },
+        (err, { result }) => {
+          this._source = result.toString();
+          console.log(this._source);
+          callback();
+        }
+      );
+      // this._source = source;
+      // callback(err);
     });
   }
 

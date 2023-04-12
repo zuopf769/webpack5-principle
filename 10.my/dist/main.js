@@ -96,16 +96,58 @@
     for (var i = 0; i < jsonpArray.length; i++) webpackJsonpCallback(jsonpArray[i]);
     var parentJsonpFunction = oldJsonpFunction;
     
-    deferredModules.push(["./src/page2.js","vendors","commons"]);
+    deferredModules.push(["./src/index.js","vendors"]);
     return checkDeferredModules();
   })
     ({
         
-            "./src/page2.js":
+            "./src/index.js":
             (function (module, exports, __webpack_require__) {
-              let title = __webpack_require__("./src/title.js");
-let isarray = __webpack_require__("./node_modules/isarray/index.js");
-console.log(title, isarray);
+              // ------------测试同步---------------------
+
+// 1. 同步require模块
+// let title = require("./title");
+// console.log(title);
+
+// ------------测试异步---------------------
+
+// 先处理底下的两个动态异步模块title和sum，然后再处理自己的同步依赖sync
+
+// --同步模块
+let sync = __webpack_require__("./src/sync.js");
+console.log(sync);
+
+// --异步模块
+
+// 2. 动态import；import()是天然的一个代码分割点；遇到import()就会把import的模块分割出一个代码块；和main代码块区分开
+// import()的模块会成为一个单独的入口，会生成一个单独的代码块
+// 如果import调用了一个模块，那么这个模块和它依赖的模块会合成一个单独的异步模块；里面所以模块的async都是true
+// 魔法注释/* webpackChunkName: "title" */
+__webpack_require__.e("title").then(__webpack_require__.t.bind(null, "./src/title.js", 7)).then(result => console.log(result.default));
+
+__webpack_require__.e("sum").then(__webpack_require__.t.bind(null, "./src/sum.js", 7)).then(result => console.log(result.default));
+
+// ------------测试第三方模块---------------------
+
+const isarray = __webpack_require__("./node_modules/isarray/index.js");
+console.log(isarray([1, 2, 3]));
+
+// -------------测试css文件--------------------------------
+
+__webpack_require__("./src/index.less");
+            }),
+        
+            "./src/sync.js":
+            (function (module, exports, __webpack_require__) {
+              module.exports = "sync";
+            }),
+        
+            "./src/index.less":
+            (function (module, exports, __webpack_require__) {
+              
+let style = document.createElement('style');
+style.innerHTML = "body {\n  background-color: red;\n}\n";
+document.head.appendChild(style);
             }),
          
     });

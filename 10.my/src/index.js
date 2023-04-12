@@ -30,3 +30,7 @@ import(/* webpackChunkName: "sum" */ "./sum").then((result) =>
 
 const isarray = require("isarray");
 console.log(isarray([1, 2, 3]));
+
+// -------------测试css文件--------------------------------
+
+require("./index.less");
